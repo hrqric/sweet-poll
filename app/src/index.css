@@ -1,0 +1,254 @@
+@import "tailwindcss";
+@import "@fontsource/jersey-10/400.css";
+@import "@fontsource/pixelify-sans/400.css";
+@import "@fontsource/pixelify-sans/600.css";
+@import "@fontsource/pixelify-sans/700.css";
+
+@theme {
+  --font-display: "Jersey 10", ui-monospace, monospace;
+  --font-body: "Pixelify Sans", ui-monospace, monospace;
+
+  --color-sky: #5c94fc;
+  --color-sky-deep: #3c6ad8;
+  --color-sky-pale: #a4e4fc;
+  --color-paper: #fcf4dc;
+  --color-paper-2: #f0e2b6;
+  --color-paper-3: #dcc88c;
+  --color-ink: #181020;
+  --color-ink-2: #3a3046;
+  --color-muted: #6e5f4c;
+  --color-coin: #f8b800;
+  --color-coin-dark: #ac7c00;
+  --color-brick: #c84c0c;
+  --color-brick-dark: #7c2c00;
+  --color-red: #d82800;
+  --color-grass: #00a844;
+  --color-grass-dark: #006c28;
+  --color-cyan: #00e8d8;
+}
+
+:root {
+  color-scheme: light;
+  --px: 4px;
+}
+
+html {
+  background: var(--color-sky);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-sky);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+}
+
+::selection {
+  background: var(--color-coin);
+  color: var(--color-ink);
+}
+
+img,
+svg {
+  image-rendering: pixelated;
+}
+
+/* ───── caixa de pixel: borda preta com cantos cortados + sombra em degrau ───── */
+@utility px-box {
+  background: var(--color-paper);
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink),
+    calc(2 * var(--px)) calc(2 * var(--px)) 0 0 rgb(24 16 32 / 0.35),
+    var(--px) calc(2 * var(--px)) 0 0 rgb(24 16 32 / 0.35),
+    calc(2 * var(--px)) var(--px) 0 0 rgb(24 16 32 / 0.35);
+}
+
+@utility px-box-flat {
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink);
+}
+
+/* caixa de diálogo estilo RPG: preto com moldura dupla */
+@utility px-dialog {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--color-ink),
+    inset 0 0 0 calc(2 * var(--px)) var(--color-paper),
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink);
+}
+
+/* ───── botões ───── */
+.btn {
+  --btn-bg: var(--color-coin);
+  --btn-hi: #fcd86c;
+  --btn-lo: var(--color-coin-dark);
+  --btn-fg: var(--color-ink);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  cursor: pointer;
+  user-select: none;
+  box-shadow:
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 var(--btn-lo),
+    inset var(--px) var(--px) 0 0 var(--btn-hi),
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink),
+    0 calc(2 * var(--px)) 0 0 var(--color-ink);
+  transition: transform 60ms steps(1);
+}
+.btn:hover {
+  filter: brightness(1.06);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(var(--px));
+  box-shadow:
+    inset var(--px) var(--px) 0 0 var(--btn-lo),
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  --btn-bg: #bcb4a4;
+  --btn-hi: #d8d0c0;
+  --btn-lo: #8c8474;
+  --btn-fg: #5c5448;
+}
+.btn:focus-visible {
+  outline: var(--px) dashed var(--color-ink);
+  outline-offset: calc(3 * var(--px));
+}
+.btn-red {
+  --btn-bg: var(--color-red);
+  --btn-hi: #fc7460;
+  --btn-lo: #881400;
+  --btn-fg: var(--color-paper);
+}
+.btn-green {
+  --btn-bg: var(--color-grass);
+  --btn-hi: #58d854;
+  --btn-lo: var(--color-grass-dark);
+  --btn-fg: var(--color-paper);
+}
+.btn-paper {
+  --btn-bg: var(--color-paper);
+  --btn-hi: #ffffff;
+  --btn-lo: var(--color-paper-3);
+  --btn-fg: var(--color-ink);
+}
+.btn-ink {
+  --btn-bg: var(--color-ink-2);
+  --btn-hi: #5a4c6a;
+  --btn-lo: var(--color-ink);
+  --btn-fg: var(--color-paper);
+}
+.btn-sm {
+  font-size: 1.15rem;
+  padding: 0.35rem 0.7rem 0.45rem;
+}
+
+/* ───── campos ───── */
+.field {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  padding: 0.6rem 0.75rem;
+  background: #fffdf4;
+  color: var(--color-ink);
+  border: none;
+  box-shadow:
+    inset var(--px) var(--px) 0 0 var(--color-paper-3),
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink);
+  outline: none;
+}
+.field:focus {
+  background: #ffffff;
+  box-shadow:
+    inset var(--px) var(--px) 0 0 var(--color-coin),
+    0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+    0 var(--px) 0 0 var(--color-ink),
+    calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+    var(--px) 0 0 0 var(--color-ink);
+}
+.field::placeholder {
+  color: #a89c84;
+}
+
+/* ───── animações em degrau ───── */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(-1 * var(--bob, 4px))); }
+}
+.anim-bob {
+  animation: bob 1.1s steps(2, jump-none) infinite;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.anim-blink {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes coin-spin {
+  0% { transform: scaleX(1); }
+  25% { transform: scaleX(0.5); }
+  50% { transform: scaleX(0.15); }
+  75% { transform: scaleX(0.5); }
+  100% { transform: scaleX(1); }
+}
+.anim-coin {
+  animation: coin-spin 0.9s steps(4) infinite;
+}
+
+@keyframes drift {
+  from { transform: translateX(-30vw); }
+  to { transform: translateX(130vw); }
+}
+
+@keyframes walk {
+  from { transform: translateX(-120px); }
+  to { transform: translateX(calc(100vw + 120px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* rolagem fina com cara de jogo */
+* {
+  scrollbar-color: var(--color-ink) var(--color-paper-2);
+}
