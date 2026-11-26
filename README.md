@@ -59,6 +59,17 @@ Abre em http://localhost:5173.
 30 itens 8-bit em seis espaços: chapéu, rosto, roupa, mão, pet e cenário — de boné a coroa,
 do gatinho ao Olhudo (o ciclope roxo). Comprou, já veste.
 
+## Apuração automática (vencedores pela Wikipédia)
+
+- A Edge Function `supabase/functions/tga-results` lê a página "The Game Awards <ano>" da Wikipédia
+  e acha o vencedor de cada categoria (linha em negrito com `{{double-dagger}}`), casando com o `tga_catalog`.
+- `pg_cron` chama a função a cada 2 min de 10 a 12 de dezembro (UTC). O host também tem "Ler agora".
+- Um vencedor só é confirmado quando aparece igual em duas leituras com ≥ 90 s de intervalo
+  (vandalismo na Wikipédia costuma ser revertido em menos de 1 min).
+- Bolões com "Apuração automática" ligada (padrão) recebem os vencedores das categorias oficiais sozinhos.
+  O que o host marcar na mão tem prioridade; categorias escritas à mão continuam com o host.
+- Testar o parser sem gravar nada: `GET /functions/v1/tga-results?year=2025&dry=1`.
+
 ## Indicados oficiais
 
 O modo "lista oficial" lê a tabela `tga_catalog`, semeada com os indicados de 2026 a partir da

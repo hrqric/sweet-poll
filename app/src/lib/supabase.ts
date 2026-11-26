@@ -34,6 +34,8 @@ export type Pool = {
   status: PoolStatus
   scoring: Scoring
   base_points: number
+  /** vencedores das categorias oficiais vêm sozinhos da Wikipédia */
+  auto_results: boolean
   lock_at: string | null
   created_at: string
   finished_at: string | null
@@ -49,6 +51,8 @@ export type Category = {
   /** só no modo dinâmico, e só depois que os palpites fecham */
   multiplier: number | null
   winner_nominee_id: string | null
+  /** quem marcou o vencedor: o host na mão ou a apuração automática */
+  winner_source: 'host' | 'auto' | null
   pool_nominees: Nominee[]
 }
 export type Member = {
@@ -61,6 +65,14 @@ export type Member = {
   profiles: { username: string; avatar: Avatar | null }
 }
 export type Pick = { pool_id: string; user_id: string; category_id: string; nominee_id: string }
+
+export type TgaSync = {
+  year: number
+  last_run_at: string | null
+  last_ok_at: string | null
+  last_error: string | null
+  found: number
+}
 
 export type ShopItem = {
   id: string

@@ -13,6 +13,7 @@
 | AD-007 | Moedas: 150 iniciais; ao encerrar, cada jogador ganha moedas = pontos; pódio +100/+50/+25 | economia simples, todo mundo compra algo | active | 2026-11-26 |
 | AD-008 | Git iniciado; commits livres sem pedir aprovação (preferência do usuário) | escolha do usuário | active | 2026-11-26 |
 | AD-009 | Direção visual: céu NES azul, painéis creme com borda preta de pixel e sombra dura, ouro de moeda; fontes Jersey 10 (display) + Pixelify Sans (texto) | 8-bit "de verdade" e longe do roxo/dark genérico | active | 2026-11-26 |
+| AD-011 | Vencedores oficiais lidos da Wikipédia (Edge Function + pg_cron a cada 2 min em 10–12/dez UTC), confirmados após 2 leituras iguais (≥ 90 s), aplicados nos bolões com auto_results; marcação manual do host prevalece | site oficial bloqueia leitura (403); a página da Wikipédia teve 95 edições ao vivo no TGA 2025 e vandalismo revertido em < 1 min | active | 2026-11-26 |
 | AD-010 | Pontuação por bolão: flat / custom / dynamic. Dinâmica = base × multiplicador 1–2 pela entropia normalizada dos palpites do grupo (ln(min(palpites, indicados))), calculado só ao fechar palpites | não há fonte pública confiável de "dificuldade" (odds são pagas/bloqueadas); a divisão do próprio grupo é verificável e não vaza palpites, que só ficam visíveis após o fechamento (AD-006) | active | 2026-11-26 |
 
 ## Handoff

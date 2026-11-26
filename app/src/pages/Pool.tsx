@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
 import {
   supabase, errMsg, picksOpen, catValue,
-  type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview, type Scoring,
+  type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview, type Scoring, type TgaSync,
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Head, Sprite } from '../components/Sprite'
@@ -539,6 +539,77 @@ function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => 
 }
 
 /** Bloco "+ categoria" no fim da lista do painel do host. */
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+/** Bloco do painel do host: liga/desliga a apuração pela Wikipédia e mostra a última leitura. */
+function AutoResultsBox({ pool, busy, onToggle }: { pool: Pool; busy: boolean; onToggle: (on: boolean) => Promise<void> }) {
+  const toast = useToast()
+  const [sync, setSync] = useState<TgaSync | null>(null)
+  const [fetching, setFetching] = useState(false)
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('tga_sync').select('*').eq('year', pool.year).maybeSingle()
+    setSync((data as TgaSync | null) ?? null)
+  }, [pool.year])
+
+  useEffect(() => {
+    load()
+    const ch = supabase
+      .channel(`tga-sync-${pool.year}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tga_sync', filter: `year=eq.${pool.year}` }, () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [pool.year, load])
+
+  async function fetchNow() {
+    setFetching(true)
+    const { data, error } = await supabase.functions.invoke('tga-results')
+    setFetching(false)
+    if (error) return toast('Não deu pra ler a Wikipédia agora. Tenta de novo em 1 min.', 'err')
+    if (data?.skipped) return toast('Acabou de ler; a próxima leitura sai em menos de 1 min.')
+    toast(data?.confirmed ? `${data.confirmed} vencedor(es) novo(s) confirmado(s)` : 'Leitura feita. Nada novo confirmado ainda.')
+    load()
+  }
+
+  return (
+    <div className="px-box p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <p className="font-display text-3xl leading-none">Apuração automática</p>
+          <p className="mt-1 text-muted">
+            {pool.auto_results
+              ? 'Na noite do TGA o site lê a página da Wikipédia a cada 2 min e marca os vencedores das categorias oficiais sozinho. Um vencedor só entra depois de aparecer igual em duas leituras. O que você marcar na mão vale mais.'
+              : 'Desligada: você marca todos os vencedores na mão.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={pool.auto_results}
+          className={`btn btn-sm ${pool.auto_results ? 'btn-green' : 'btn-paper'}`}
+          disabled={busy}
+          onClick={() => onToggle(!pool.auto_results)}
+        >
+          {pool.auto_results ? 'Ligada' : 'Desligada'}
+        </button>
+      </div>
+      {pool.auto_results && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t-4 border-dashed border-paper-3 pt-4 text-sm">
+          <span>
+            {sync?.last_ok_at
+              ? <>Última leitura às <strong>{hhmm(sync.last_ok_at)}</strong> · {sync.found} {sync.found === 1 ? 'vencedor oficial' : 'vencedores oficiais'} até agora</>
+              : `Ainda não leu nada de ${pool.year}. Começa sozinha no dia da cerimônia.`}
+            {sync?.last_error && <span className="block text-red">Última tentativa falhou: {sync.last_error}</span>}
+          </span>
+          <button type="button" className="btn btn-sm btn-paper" disabled={fetching} onClick={fetchNow}>
+            {fetching ? 'Lendo...' : 'Ler agora'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const SCORING_HELP: Record<Scoring, string> = {
   flat: 'Toda categoria vale os mesmos pontos.',
   custom: 'Cada categoria tem seus pontos; ajuste no campo ao lado do nome de cada uma.',
@@ -789,6 +860,17 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
         </button>
       </div>
 
+      <AutoResultsBox
+        pool={pool}
+        busy={busy}
+        onToggle={async (on) => {
+          if (await rpc('set_auto_results', { p_pool: pool.id, p_on: on }, on ? 'Apuração automática ligada' : 'Apuração automática desligada: você marca tudo')) {
+            sfx.select()
+            onChange()
+          }
+        }}
+      />
+
       <ScoringBox
         key={`${pool.scoring}-${pool.base_points}`}
         pool={pool}
@@ -843,6 +925,9 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
                       aria-pressed={on}
                     >
                       {on && <TrophyIcon size={14} />}{n.title}
+                      {on && c.winner_source === 'auto' && (
+                        <span className="ml-1 bg-ink px-1 font-display text-sm leading-tight text-paper" title="Marcado sozinho pela leitura da Wikipédia">auto</span>
+                      )}
                     </button>
                   )
                 })}
