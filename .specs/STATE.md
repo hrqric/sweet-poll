@@ -15,6 +15,9 @@
 | AD-009 | Direção visual: céu NES azul, painéis creme com borda preta de pixel e sombra dura, ouro de moeda; fontes Jersey 10 (display) + Pixelify Sans (texto) | 8-bit "de verdade" e longe do roxo/dark genérico | active | 2026-11-26 |
 
 ## Handoff
+- 2026-11-26: S1–S5 entregues e testados ponta a ponta no navegador (cadastro → boneco → criar bolão oficial → palpites → amigo entra/palpita via RPC → host marca vencedores → encerrar → moedas → compra na loja). S6 (revisão ui-humanizer por tela) em andamento.
+- Contas de teste em `supabase/seed/test-users.md` — apagar antes de produção.
+- Bolão de teste `00CCB2` (encerrado) existe no banco dev.
 - Fase atual: Discovery (manual) → construção direta dos slices S1–S6, sem loop (execução única, autor sozinho).
 - Harness: gates computacionais = `npm run build` (tsc + vite) + `get_advisors` do Supabase (security) + teste manual no navegador.
 - Pareamento de categorias do catálogo veio de uma inferência sobre a Wikipedia — revisar contra o site oficial.

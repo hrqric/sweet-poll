@@ -82,7 +82,8 @@ export function Layout({ children }: { children: ReactNode }) {
               aria-pressed={!muted}
               title={muted ? 'Ligar som' : 'Desligar som'}
             >
-              {muted ? 'SOM: OFF' : 'SOM: ON'}
+              <span className="sm:hidden">{muted ? 'MUDO' : 'SOM'}</span>
+              <span className="hidden sm:inline">{muted ? 'SOM: OFF' : 'SOM: ON'}</span>
             </button>
             {profile && (
               <>

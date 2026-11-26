@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { supabase, errMsg, picksOpen, type Pool } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Sprite } from '../components/Sprite'
-import { Coins, Loading, STATUS_TAG, Tag, useToast } from '../components/ui'
+import { Coins, Loading, Ord, STATUS_TAG, Tag, useToast } from '../components/ui'
 
 type Slot = {
   pool: Pool
@@ -93,9 +93,10 @@ export default function Hub() {
           </div>
         ) : (
           <ol className="space-y-5">
-            {slots.map((s, i) => {
+            {slots.map((s) => {
               const tag = STATUS_TAG[s.pool.status === 'open' && !picksOpen(s.pool) ? 'locked' : s.pool.status]
-              const pending = picksOpen(s.pool) && s.myPicks < s.categories
+              const finished = s.pool.status === 'finished'
+              const missing = picksOpen(s.pool) ? s.categories - s.myPicks : 0
               return (
                 <li key={s.pool.id}>
                   <Link
@@ -103,8 +104,12 @@ export default function Hub() {
                     onClick={() => sfx.select()}
                     className="px-box group flex items-stretch gap-0 transition-transform hover:-translate-y-1"
                   >
-                    <div className="flex w-16 shrink-0 items-center justify-center border-r-4 border-ink bg-ink font-display text-3xl text-coin sm:w-20">
-                      {String(i + 1).padStart(2, '0')}
+                    {/* placar do jogador: colocação quando acabou, palpites enquanto rola */}
+                    <div className="flex w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 bg-ink px-1 text-center sm:w-24">
+                      <span className={`font-display text-3xl leading-none tabular-nums sm:text-4xl ${finished || missing === 0 ? 'text-coin' : 'text-paper'}`}>
+                        {finished ? <Ord n={s.rank} /> : <>{s.myPicks}/{s.categories}</>}
+                      </span>
+                      <span className="text-sm leading-none text-paper-3">{finished ? 'lugar' : 'palpites'}</span>
                     </div>
                     <div className="min-w-0 flex-1 p-4 sm:p-5">
                       <div className="flex flex-wrap items-center gap-2">
@@ -113,10 +118,13 @@ export default function Hub() {
                       </div>
                       <h2 className="mt-2 truncate font-display text-3xl leading-none group-hover:underline">{s.pool.name}</h2>
                       <p className="mt-2 text-muted">
-                        {s.members} {s.members === 1 ? 'jogador' : 'jogadores'} · {s.categories} categorias ·{' '}
-                        {s.pool.status === 'finished'
-                          ? <>você ficou em <strong className="text-ink">{s.rank}º</strong></>
-                          : <>seus palpites: <strong className={pending ? 'text-red' : 'text-ink'}>{s.myPicks}/{s.categories}</strong></>}
+                        {s.members} {s.members === 1 ? 'jogador' : 'jogadores'} · {s.categories} categorias
+                        {missing > 0 && (
+                          <> · <strong className="text-red">{missing === 1 ? 'falta 1 palpite' : `faltam ${missing} palpites`}</strong></>
+                        )}
+                        {finished && s.coins_earned > 0 && (
+                          <span className="sm:hidden"> · <strong className="text-ink">+{s.coins_earned} moedas</strong></span>
+                        )}
                       </p>
                     </div>
                     {s.pool.status === 'finished' && s.coins_earned > 0 && (
@@ -146,7 +154,7 @@ export default function Hub() {
           </div>
           <div className="mt-5 flex gap-3">
             <Link to="/loja" className="btn btn-sm flex-1">Loja</Link>
-            <Link to="/personagem" className="btn btn-paper btn-sm flex-1">Visual</Link>
+            <Link to="/personagem" className="btn btn-paper btn-sm flex-1">Boneco</Link>
           </div>
         </div>
 

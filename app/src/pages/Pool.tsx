@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
@@ -8,7 +8,7 @@ import {
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Head, Sprite } from '../components/Sprite'
-import { Coins, CoinIcon, Loading, Modal, Ord, STATUS_TAG, Tag, useToast } from '../components/ui'
+import { Coins, CoinIcon, Loading, Modal, Ord, STATUS_TAG, Tag, TrophyIcon, useToast } from '../components/ui'
 
 // ───────────────────────── convite / entrada ─────────────────────────
 
@@ -62,7 +62,7 @@ export default function PoolPage() {
             <div>
               <p className="font-display text-2xl leading-none text-coin">{preview.owner_username} te chamou pra</p>
               <h1 className="mt-2 font-display text-5xl leading-none">{preview.name}</h1>
-              {preview.description && <p className="mt-3 text-lg italic">"{preview.description}"</p>}
+              {preview.description && <p className="mt-3 text-lg">"{preview.description}"</p>}
               <p className="mt-4 text-paper-3">
                 {preview.member_count} {preview.member_count === 1 ? 'jogador' : 'jogadores'} · {preview.category_count} categorias ·{' '}
                 {preview.mode === 'server' ? 'indicados oficiais' : 'categorias da casa'}
@@ -162,6 +162,14 @@ function PoolRoom({ poolId }: { poolId: string }) {
   const table = useMemo(() => standings(members, cats, picks, finished), [members, cats, picks, finished])
   const me = members.find((m) => m.user_id === profile?.id)
 
+  // bolão encerrado abre direto no pódio: é o momento que todo mundo veio ver
+  const landed = useRef(false)
+  useEffect(() => {
+    if (!pool || landed.current) return
+    landed.current = true
+    if (pool.status === 'finished') setTab('ranking')
+  }, [pool])
+
   if (!pool || !profile) return <Loading />
 
   const statusKey = pool.status === 'open' && !open ? 'locked' : pool.status
@@ -203,7 +211,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
 
       {finished && me && <FinishBanner me={me} total={members.length} />}
 
-      <nav className="mb-8 flex gap-2 border-b-4 border-ink" role="tablist">
+      <nav className="mb-8 flex gap-1 border-b-4 border-ink sm:gap-2" role="tablist">
         {([['picks', 'Palpites'], ['ranking', 'Ranking'], ...(isHost ? [['host', 'Painel do host']] : [])] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
@@ -211,11 +219,11 @@ function PoolRoom({ poolId }: { poolId: string }) {
             role="tab"
             aria-selected={tab === t}
             onClick={() => { setTab(t); sfx.select() }}
-            className={`-mb-1 border-4 border-b-0 px-4 pt-2 pb-2.5 font-display text-2xl leading-none ${
+            className={`-mb-1 border-4 border-b-0 px-3 pt-2 pb-2.5 font-display text-xl leading-none whitespace-nowrap sm:px-4 sm:text-2xl ${
               tab === t ? 'border-ink bg-paper' : 'border-transparent text-ink hover:bg-paper/50'
             }`}
           >
-            {label}
+            {t === 'host' ? <><span className="sm:hidden">Host</span><span className="hidden sm:inline">{label}</span></> : label}
             {t === 'picks' && open && (
               <span className={`ml-2 text-lg ${myPicks.size < cats.length ? 'text-red' : 'text-grass-dark'}`}>{myPicks.size}/{cats.length}</span>
             )}
@@ -224,11 +232,11 @@ function PoolRoom({ poolId }: { poolId: string }) {
       </nav>
 
       {tab === 'picks' && (
-        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} meId={profile.id}
+        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} finished={finished} meId={profile.id}
           onPicked={(catId, nomId) => setPicks((ps) => [...ps.filter((p) => !(p.user_id === profile.id && p.category_id === catId)), { pool_id: pool.id, user_id: profile.id, category_id: catId, nominee_id: nomId }])}
         />
       )}
-      {tab === 'ranking' && <RankingTab table={table} open={open} cats={cats} meId={profile.id} />}
+      {tab === 'ranking' && <RankingTab table={table} open={open} finished={finished} cats={cats} meId={profile.id} />}
       {tab === 'host' && isHost && <HostTab pool={pool} cats={cats} open={open} onChange={reload} onFinished={async () => { await reload(); await refreshProfile(); setTab('ranking') }} />}
     </div>
   )
@@ -237,9 +245,9 @@ function PoolRoom({ poolId }: { poolId: string }) {
 // ───────────────────────── palpites ─────────────────────────
 
 function PicksTab({
-  cats, picks, myPicks, members, open, meId, onPicked,
+  cats, picks, myPicks, members, open, finished, meId, onPicked,
 }: {
-  cats: Category[]; picks: Pick[]; myPicks: Map<string, string>; members: Member[]; open: boolean; meId: string
+  cats: Category[]; picks: Pick[]; myPicks: Map<string, string>; members: Member[]; open: boolean; finished: boolean; meId: string
   onPicked: (cat: string, nom: string) => void
 }) {
   const toast = useToast()
@@ -259,8 +267,12 @@ function PicksTab({
   return (
     <>
       {!open && (
-        <p className="px-dialog mb-8 p-4 text-lg">
-          Palpites fechados. Agora dá pra ver em quem cada um apostou — e torcer.
+        <p className="px-dialog mb-8 px-5 py-4 text-lg leading-snug">
+          {finished ? (
+            <>Fim de papo. <span className="text-coin">Amarelo</span> é quem levou, <span className="text-coin">▶</span> é o seu palpite.</>
+          ) : (
+            <>Palpites travados. Agora é torcer: cada carinha mostra quem apostou em quem.</>
+          )}
         </p>
       )}
       <ol className="grid gap-8 md:grid-cols-2">
@@ -271,10 +283,10 @@ function PicksTab({
           return (
             <li key={c.id} className="px-box flex flex-col">
               <header className="flex items-start justify-between gap-3 border-b-4 border-ink bg-paper-2 px-4 pt-3 pb-3">
-                <div className="min-w-0">
-                  <span className="font-display text-lg leading-none text-muted">{String(idx + 1).padStart(2, '0')}</span>
-                  <h3 className="font-display text-3xl leading-[0.95]">{c.name}</h3>
-                </div>
+                <h3 className="min-w-0 font-display text-3xl leading-[0.95]">
+                  <span className="mr-2 text-muted">{idx + 1}.</span>
+                  {c.name}
+                </h3>
                 <div className="shrink-0 text-right">
                   <span className="font-display text-2xl leading-none">{c.points} pts</span>
                   {winner && mine && (
@@ -302,14 +314,19 @@ function PicksTab({
                           isWinner ? 'bg-coin' : chosen ? 'bg-ink text-paper' : open ? 'hover:bg-paper-2' : ''
                         } ${!open ? 'cursor-default' : ''}`}
                       >
-                        <span aria-hidden className={`w-5 shrink-0 font-display text-2xl leading-none ${chosen ? (isWinner ? 'text-ink' : 'text-coin') : 'text-transparent group-hover:text-muted'}`}>
+                        <span aria-hidden className={`w-5 shrink-0 font-display text-2xl leading-none ${chosen ? (isWinner ? 'text-ink' : 'text-coin') : open ? 'text-transparent group-hover:text-muted' : 'text-transparent'}`}>
                           ▶
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block leading-tight font-semibold">{n.title}</span>
                           {n.subtitle && <span className={`block truncate text-sm ${chosen && !isWinner ? 'text-paper-3' : 'text-muted'}`}>{n.subtitle}</span>}
                         </span>
-                        {isWinner && <span className="shrink-0 font-display text-xl leading-none">vencedor</span>}
+                        {isWinner && (
+                          <span className="flex shrink-0 items-center gap-1.5 font-display text-xl leading-none">
+                            <TrophyIcon size={20} />
+                            <span className="sr-only sm:not-sr-only">levou</span>
+                          </span>
+                        )}
                         {backers.length > 0 && (
                           <span className="flex shrink-0 -space-x-2" title={backers.map((b) => byUser.get(b.user_id)?.profiles.username).join(', ')}>
                             {backers.slice(0, 4).map((b) => (
@@ -342,12 +359,14 @@ const PODIUM = [
   { place: 3, h: 'h-14', color: '#c87c3c' },
 ]
 
-function RankingTab({ table, open, cats, meId }: { table: Standing[]; open: boolean; cats: Category[]; meId: string }) {
+function RankingTab({ table, open, finished, cats, meId }: { table: Standing[]; open: boolean; finished: boolean; cats: Category[]; meId: string }) {
   const decided = cats.filter((c) => c.winner_nominee_id).length
   if (open) {
     return (
       <div className="space-y-6">
-        <p className="px-dialog p-4 text-lg">O ranking começa quando os palpites fecharem. Por enquanto, quem já está na fila:</p>
+        <p className="px-dialog px-5 py-4 text-lg leading-snug">
+          O placar liga quando os palpites fecharem. Na sala até agora: {table.length} {table.length === 1 ? 'jogador' : 'jogadores'}.
+        </p>
         <ul className="flex flex-wrap gap-6">
           {table.map(({ member }) => (
             <li key={member.user_id} className="flex flex-col items-center">
@@ -364,37 +383,51 @@ function RankingTab({ table, open, cats, meId }: { table: Standing[]; open: bool
 
   return (
     <div className="space-y-10">
-      <p className="font-display text-2xl text-ink">{decided} de {cats.length} categorias decididas</p>
+      <p className="font-display text-3xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">
+        {finished ? 'Placar final' : `${decided} de ${cats.length} categorias reveladas`}
+      </p>
       <div className="flex items-end justify-center gap-3 sm:gap-6">
-        {top.map(({ place, h, color, row }) =>
-          row ? (
-            <motion.div
-              key={place}
-              className="flex w-28 flex-col items-center sm:w-36"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: (3 - place) * 0.15, type: 'tween' }}
+        {top.map(({ place, h, color, row }) => (
+          <motion.div
+            key={place}
+            className="flex w-24 flex-col items-center sm:w-36"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: (3 - place) * 0.15, type: 'tween' }}
+          >
+            {row ? (
+              <>
+                <Sprite avatar={row.member.profiles.avatar} size={place === 1 ? 104 : 84} transparent bob={place === 1} />
+                <span className="mt-1 max-w-full truncate font-display text-xl leading-none">{row.member.profiles.username}</span>
+                <span className="mt-0.5 font-display text-2xl leading-none">{row.score} pts</span>
+              </>
+            ) : (
+              // degrau vazio segura o pódio no centro quando tem menos de 3 jogadores
+              <span className="font-display text-xl leading-none text-ink/50">vago</span>
+            )}
+            <div
+              className={`mt-2 flex w-full items-start justify-center pt-2 px-box-flat ${h} ${row ? '' : 'opacity-40'}`}
+              style={{ background: color }}
             >
-              <Sprite avatar={row.member.profiles.avatar} size={place === 1 ? 104 : 84} transparent bob={place === 1} />
-              <span className="mt-1 max-w-full truncate font-display text-xl leading-none">{row.member.profiles.username}</span>
-              <span className="font-display text-lg leading-none text-ink/70">{row.score} pts</span>
-              <div className={`mt-2 flex w-full items-start justify-center pt-2 px-box-flat ${h}`} style={{ background: color }}>
-                <span className="font-display text-4xl leading-none"><Ord n={place} /></span>
-              </div>
-            </motion.div>
-          ) : null,
-        )}
+              <span className="font-display text-5xl leading-none"><Ord n={place} /></span>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       <ol className="px-box divide-y-4 divide-dashed divide-paper-3">
         {table.map((r) => (
-          <li key={r.member.user_id} className={`flex items-center gap-4 px-4 py-3 ${r.member.user_id === meId ? 'bg-paper-2' : ''}`}>
-            <span className="w-10 font-display text-3xl leading-none"><Ord n={r.rank} /></span>
+          <li key={r.member.user_id} className={`flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-4 ${r.member.user_id === meId ? 'bg-paper-2' : ''}`}>
+            <span className="w-9 font-display text-3xl leading-none"><Ord n={r.rank} /></span>
             <span className="bg-sky-pale px-box-flat"><Head avatar={r.member.profiles.avatar} size={34} /></span>
-            <span className="min-w-0 flex-1 truncate font-semibold">{r.member.profiles.username}{r.member.user_id === meId && ' (você)'}</span>
-            <span className="text-muted">{r.hits} {r.hits === 1 ? 'acerto' : 'acertos'}</span>
-            <span className="w-20 text-right font-display text-2xl leading-none">{r.score}</span>
-            {r.member.coins_earned > 0 && <Coins value={r.member.coins_earned} size={16} className="w-16 justify-end" />}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold">{r.member.profiles.username}{r.member.user_id === meId && ' (você)'}</span>
+              <span className="block text-sm text-muted">{r.hits} {r.hits === 1 ? 'acerto' : 'acertos'}</span>
+            </span>
+            <span className="text-right font-display text-3xl leading-none">
+              {r.score}<span className="ml-1 text-lg text-muted">pts</span>
+            </span>
+            {r.member.coins_earned > 0 && <Coins value={r.member.coins_earned} size={16} className="w-14 justify-end" />}
           </li>
         ))}
       </ol>
@@ -426,9 +459,9 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
     <div className="space-y-8">
       <div className="px-box flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
-          <p className="font-display text-3xl leading-none">{open ? 'Palpites abertos' : 'Palpites fechados'}</p>
-          <p className="mt-1 text-muted">
-            {open ? 'Feche quando a cerimônia começar. Marcar um vencedor também fecha.' : 'Ninguém muda mais o palpite. Dá pra reabrir se ainda não marcou vencedor.'}
+          <p className="font-display text-3xl leading-none">{open ? 'A cerimônia começou?' : 'Palpites travados'}</p>
+          <p className="mt-1 max-w-md text-muted">
+            {open ? 'Fecha os palpites quando o show começar. Marcar o primeiro vencedor fecha sozinho.' : 'Ninguém mexe mais. Dá pra reabrir enquanto nenhum vencedor foi marcado.'}
           </p>
         </div>
         <button
@@ -437,12 +470,15 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
           disabled={busy || (!open && pool.lock_at !== null && new Date(pool.lock_at) <= new Date())}
           onClick={async () => { if (await rpc('set_pool_status', { p_pool: pool.id, p_status: open ? 'locked' : 'open' })) { sfx.confirm(); onChange() } }}
         >
-          {open ? 'Fechar palpites' : 'Reabrir'}
+          {open ? 'Fechar palpites' : 'Reabrir palpites'}
         </button>
       </div>
 
       <div>
-        <h2 className="mb-4 font-display text-4xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">Quem levou?</h2>
+        <h2 className="mb-4 flex items-baseline gap-3 font-display text-4xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">
+          Quem levou?
+          <span className="text-2xl">{cats.length - missing}/{cats.length}</span>
+        </h2>
         <ol className="grid gap-6 md:grid-cols-2">
           {cats.map((c) => (
             <li key={c.id} className="px-box p-4">
@@ -461,10 +497,10 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
                           onChange()
                         }
                       }}
-                      className={`px-2.5 py-1.5 text-left text-sm font-semibold px-box-flat ${on ? 'bg-coin' : 'bg-white hover:bg-paper-2'}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-left text-sm font-semibold px-box-flat ${on ? 'bg-coin' : 'bg-white hover:bg-paper-2'}`}
                       aria-pressed={on}
                     >
-                      {on && '★ '}{n.title}
+                      {on && <TrophyIcon size={14} />}{n.title}
                     </button>
                   )
                 })}
@@ -477,7 +513,11 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
       <div className="px-dialog flex flex-wrap items-center justify-between gap-4 p-6">
         <div>
           <p className="font-display text-3xl leading-none text-coin">Fim de jogo</p>
-          <p className="mt-1">{missing ? `Faltam ${missing} vencedores pra encerrar.` : 'Tudo marcado. Encerrar soma os pontos e entrega as moedas.'}</p>
+          <p className="mt-1">
+            {missing === 0
+              ? 'Tudo marcado. Encerrar soma os pontos e entrega as moedas.'
+              : missing === 1 ? 'Falta 1 vencedor pra encerrar.' : `Faltam ${missing} vencedores pra encerrar.`}
+          </p>
         </div>
         <button type="button" className="btn" disabled={busy || missing > 0} onClick={() => setConfirm(true)}>Encerrar bolão</button>
       </div>
@@ -510,20 +550,23 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
 function FinishBanner({ me, total }: { me: Member; total: number }) {
   return (
     <motion.div
-      className="px-dialog mb-8 flex flex-wrap items-center gap-6 p-6"
+      className="px-dialog mb-8 flex flex-wrap items-center gap-x-6 gap-y-4 px-6 py-5"
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'tween', duration: 0.2 }}
     >
-      <span className="font-display text-6xl leading-none text-coin"><Ord n={me.rank} /></span>
-      <div className="flex-1">
-        <p className="font-display text-3xl leading-none">{me.rank === 1 ? 'Campeão do bolão!' : `de ${total} jogadores`}</p>
-        <p className="mt-1 text-paper-3">{me.score} pontos · {me.hits} {me.hits === 1 ? 'acerto' : 'acertos'}</p>
+      <span className="font-display text-7xl leading-none text-coin"><Ord n={me.rank} /></span>
+      <div className="min-w-40 flex-1">
+        <p className="font-display text-3xl leading-none">{me.rank === 1 ? 'Campeão do bolão!' : `lugar de ${total}`}</p>
+        <p className="mt-1.5 text-paper-3">{me.score} pts · {me.hits} {me.hits === 1 ? 'acerto' : 'acertos'}</p>
       </div>
       {me.coins_earned > 0 && (
         <div className="flex items-center gap-3">
           <CoinIcon size={36} spin />
-          <span className="font-display text-4xl leading-none text-coin">+{me.coins_earned}</span>
+          <span>
+            <span className="block font-display text-4xl leading-none text-coin">+{me.coins_earned}</span>
+            <span className="block text-sm text-paper-3">moedas no bolso</span>
+          </span>
         </div>
       )}
     </motion.div>

@@ -4,13 +4,19 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sfx } from '../lib/sfx'
 import { Ground, Sky } from '../components/Layout'
+import { Sprite } from '../components/Sprite'
 import { TrophyIcon, useToast } from '../components/ui'
+import type { Avatar } from '../lib/sprites'
 
 type Mode = 'login' | 'signup'
 
+// quem volta já tem equipamento; quem começa um jogo novo chega de mãos vazias
+const RETURNING: Avatar = { skin: 1, hairStyle: 1, hairColor: 3, eyes: 0, shirt: 1, pants: 0, hat: 'cap', held: 'controller' }
+const NEWBIE: Avatar = { skin: 3, hairStyle: 2, hairColor: 0, eyes: 1, shirt: 0, pants: 0 }
+
 function translate(msg: string) {
   if (/Invalid login credentials/i.test(msg)) return 'E-mail ou senha não batem.'
-  if (/Email not confirmed/i.test(msg)) return 'Confirme seu e-mail antes de entrar (veja a caixa de entrada).'
+  if (/Email not confirmed/i.test(msg)) return 'Falta confirmar o e-mail. O link tá na sua caixa de entrada.'
   if (/already registered/i.test(msg)) return 'Esse e-mail já tem conta. Tenta entrar.'
   if (/Password should be/i.test(msg)) return 'A senha precisa ter pelo menos 6 caracteres.'
   if (/rate limit/i.test(msg)) return 'Muitas tentativas. Espera um pouco e tenta de novo.'
@@ -77,8 +83,8 @@ export default function Login() {
   return (
     <div className="flex min-h-dvh flex-col">
       <Sky />
-      <div className="mx-auto w-full max-w-md flex-1 px-4 pt-12">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-3">
+      <div className="mx-auto w-full max-w-md flex-1 px-4 pt-10 sm:pt-12">
+        <Link to="/" className="mb-6 flex items-center justify-center gap-3 sm:mb-8">
           <TrophyIcon size={36} />
           <span className="font-display text-5xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">Bolão GOTY</span>
         </Link>
@@ -143,18 +149,23 @@ export default function Login() {
                   minLength={6}
                   required
                 />
+                {mode === 'signup' && <span className="mt-2 block text-sm text-muted">No mínimo 6 caracteres.</span>}
               </label>
               <button type="submit" className={`btn w-full ${mode === 'signup' ? 'btn-green' : ''}`} disabled={busy}>
-                {busy ? 'Carregando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
+                {busy ? (mode === 'login' ? 'Entrando...' : 'Criando...') : mode === 'login' ? 'Entrar' : 'Criar conta'}
               </button>
               {mode === 'signup' && (
-                <p className="text-center text-sm text-muted">Depois disso você monta o seu boneco 8-bit.</p>
+                <p className="text-center text-sm text-muted">Depois é só montar o seu boneco.</p>
               )}
             </form>
           </div>
         )}
       </div>
-      <Ground />
+      <Ground>
+        <div className="mx-auto flex h-20 max-w-md items-end px-6" aria-hidden>
+          <Sprite key={mode} avatar={mode === 'login' ? RETURNING : NEWBIE} size={72} transparent bob />
+        </div>
+      </Ground>
     </div>
   )
 }

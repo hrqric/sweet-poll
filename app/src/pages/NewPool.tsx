@@ -23,6 +23,15 @@ function parseNominees(text: string) {
     })
 }
 
+/** Visto desenhado em pixel: o glifo ✓ cai numa fonte de sistema e sai liso. */
+function PixelCheck() {
+  return (
+    <svg viewBox="0 0 7 6" width={14} height={12} shapeRendering="crispEdges" aria-hidden>
+      <path fill="#fcf4dc" d="M6 0h1v2H6zM5 1h1v2H5zM4 2h1v2H4zM3 3h1v2H3zM2 4h1v2H2zM1 3h1v2H1zM0 2h1v2H0z" />
+    </svg>
+  )
+}
+
 function ModeCard({ active, onClick, title, children }: { active: boolean; onClick: () => void; title: string; children: ReactNode }) {
   return (
     <button
@@ -32,8 +41,10 @@ function ModeCard({ active, onClick, title, children }: { active: boolean; onCli
       onClick={onClick}
       className={`relative p-5 text-left transition-transform ${active ? 'px-dialog -translate-y-1' : 'px-box hover:-translate-y-0.5'}`}
     >
-      {active && <span className="absolute top-4 right-5 font-display text-2xl leading-none text-coin">▶ ok</span>}
-      <span className={`block font-display text-3xl leading-none ${active ? 'text-coin' : ''}`}>{title}</span>
+      <span className={`flex items-center gap-2 font-display text-3xl leading-none ${active ? 'text-coin' : ''}`}>
+        <span aria-hidden className={`text-2xl ${active ? '' : 'invisible'}`}>▶</span>
+        {title}
+      </span>
       <span className={`mt-3 block leading-snug ${active ? 'text-paper' : 'text-muted'}`}>{children}</span>
     </button>
   )
@@ -70,6 +81,12 @@ export default function NewPool() {
     () => catalog?.filter((c) => picked.has(c.id)).reduce((n, c) => n + c.nominees.length, 0) ?? 0,
     [catalog, picked],
   )
+
+  const catCount = mode === 'server' ? picked.size : drafts.length
+  const lockLabel = useMemo(() => {
+    const d = lockAt ? new Date(lockAt) : null
+    return d && !isNaN(+d) ? d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+  }, [lockAt])
 
   const toggle = (id: number) => {
     sfx.select()
@@ -126,8 +143,8 @@ export default function NewPool() {
     <form onSubmit={submit} className="mx-auto max-w-4xl space-y-10">
       <h1 className="font-display text-5xl leading-none text-paper drop-shadow-[3px_3px_0_#181020] sm:text-6xl">Novo bolão</h1>
 
-      <Panel title="1 · Nome na porta">
-        <div className="grid gap-5 sm:grid-cols-[1fr_1fr]">
+      <Panel>
+        <div className="grid gap-5 sm:grid-cols-[3fr_2fr]">
           <label className="block">
             <span className="mb-2 block font-semibold">Nome do bolão</span>
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Bolão da firma 2026" minLength={3} maxLength={60} required />
@@ -139,7 +156,7 @@ export default function NewPool() {
         </div>
       </Panel>
 
-      <Panel title="2 · De onde vêm os indicados?">
+      <Panel title="De onde vêm os indicados?">
         <div role="radiogroup" className="grid gap-6 sm:grid-cols-2">
           <ModeCard active={mode === 'server'} onClick={() => { setMode('server'); sfx.select() }} title="Lista oficial 2026">
             O site já tem as categorias e os indicados deste ano. Você só marca quais entram.
@@ -152,7 +169,7 @@ export default function NewPool() {
 
       {mode === 'server' ? (
         <Panel
-          title="3 · Categorias"
+          title="Quais categorias valem"
           aside={
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-paper btn-sm" onClick={() => catalog && setPicked(new Set(catalog.map((c) => c.id)))}>Todas</button>
@@ -175,8 +192,8 @@ export default function NewPool() {
                     <li key={c.id}>
                       <label className={`flex cursor-pointer items-start gap-3 px-2 py-2 ${on ? 'bg-paper-2' : 'hover:bg-paper-2/60'}`}>
                         <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(c.id)} />
-                        <span aria-hidden className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center px-box-flat font-display text-xl leading-none ${on ? 'bg-grass text-paper' : 'bg-white'}`}>
-                          {on ? '✓' : ''}
+                        <span aria-hidden className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center px-box-flat ${on ? 'bg-grass' : 'bg-white'}`}>
+                          {on && <PixelCheck />}
                         </span>
                         <span className="min-w-0">
                           <span className="block font-semibold leading-tight">{c.category}</span>
@@ -192,7 +209,7 @@ export default function NewPool() {
         </Panel>
       ) : (
         <Panel
-          title="3 · Suas categorias"
+          title="Suas categorias"
           aside={
             catalog && (
               <select
@@ -243,7 +260,7 @@ export default function NewPool() {
         </Panel>
       )}
 
-      <Panel title="4 · Regras">
+      <Panel title="Pontos e prazo">
         <div className="grid gap-6 sm:grid-cols-2">
           <label className="block">
             <span className="mb-2 block font-semibold">Pontos por acerto</span>
@@ -258,8 +275,19 @@ export default function NewPool() {
         </div>
       </Panel>
 
-      <div className="flex justify-end">
-        <button type="submit" className="btn btn-green text-3xl" disabled={busy}>
+      {/* resumo fixo no pé: a lista de categorias é longa e o botão some lá embaixo */}
+      <div className="px-dialog sticky bottom-4 z-10 flex items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
+        <p className="min-w-0 font-display text-2xl leading-tight">
+          <span className="text-coin">{catCount}</span> {catCount === 1 ? 'categoria' : 'categorias'}
+          {mode === 'server' && (
+            <span className="hidden sm:inline">
+              <span className="text-paper-3"> · </span>
+              <span className="text-coin">{points}</span> pts por acerto
+            </span>
+          )}
+          {lockLabel && <span className="hidden text-xl text-paper-3 sm:inline"> · fecha {lockLabel}</span>}
+        </p>
+        <button type="submit" className="btn btn-green text-2xl sm:text-3xl" disabled={busy}>
           {busy ? 'Criando...' : 'Criar bolão'}
         </button>
       </div>

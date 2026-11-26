@@ -1,15 +1,16 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './lib/auth'
-import { Layout } from './components/Layout'
+import { Layout, Sky } from './components/Layout'
 import { Loading } from './components/ui'
 import Title from './pages/Title'
-import Login from './pages/Login'
-import CharacterCreator from './pages/CharacterCreator'
-import Hub from './pages/Hub'
-import NewPool from './pages/NewPool'
-import PoolPage from './pages/Pool'
-import Shop from './pages/Shop'
+
+const Login = lazy(() => import('./pages/Login'))
+const CharacterCreator = lazy(() => import('./pages/CharacterCreator'))
+const Hub = lazy(() => import('./pages/Hub'))
+const NewPool = lazy(() => import('./pages/NewPool'))
+const PoolPage = lazy(() => import('./pages/Pool'))
+const Shop = lazy(() => import('./pages/Shop'))
 
 /** Exige login e personagem criado (AD-003). */
 function Gate({ children, allowNoAvatar = false }: { children: ReactNode; allowNoAvatar?: boolean }) {
@@ -24,15 +25,17 @@ function Gate({ children, allowNoAvatar = false }: { children: ReactNode; allowN
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Title />} />
-      <Route path="/entrar" element={<Login />} />
-      <Route path="/b/:code" element={<Layout><PoolPage /></Layout>} />
-      <Route path="/personagem" element={<Gate allowNoAvatar><CharacterCreator /></Gate>} />
-      <Route path="/hub" element={<Gate><Layout><Hub /></Layout></Gate>} />
-      <Route path="/bolao/novo" element={<Gate><Layout><NewPool /></Layout></Gate>} />
-      <Route path="/loja" element={<Gate><Layout><Shop /></Layout></Gate>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<><Sky /><Loading /></>}>
+      <Routes>
+        <Route path="/" element={<Title />} />
+        <Route path="/entrar" element={<Login />} />
+        <Route path="/b/:code" element={<Layout><PoolPage /></Layout>} />
+        <Route path="/personagem" element={<Gate allowNoAvatar><CharacterCreator /></Gate>} />
+        <Route path="/hub" element={<Gate><Layout><Hub /></Layout></Gate>} />
+        <Route path="/bolao/novo" element={<Gate><Layout><NewPool /></Layout></Gate>} />
+        <Route path="/loja" element={<Gate><Layout><Shop /></Layout></Gate>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }

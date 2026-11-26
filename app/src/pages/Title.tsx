@@ -42,14 +42,18 @@ function useTypewriter(lines: string[]) {
     setLine((l) => (l + 1) % lines.length)
     setChars(0)
   }
-  return { text: full.slice(0, chars), done, next, last: line === lines.length - 1 }
+  return { text: full.slice(0, chars), done, next, line }
 }
 
 export default function Title() {
   const { session, profile } = useAuth()
   const navigate = useNavigate()
   const tw = useTypewriter(LINES)
-  const days = useMemo(() => Math.max(0, Math.ceil((CEREMONY.getTime() - Date.now()) / 86_400_000)), [])
+  // diferença em dias de calendário, pra "amanhã" e "é hoje!" baterem com a data e não com as horas
+  const days = useMemo(() => {
+    const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    return Math.max(0, Math.round((day(CEREMONY) - day(new Date())) / 86_400_000))
+  }, [])
 
   const start = () => {
     sfx.confirm()
@@ -68,41 +72,66 @@ export default function Title() {
     <div className="flex min-h-dvh flex-col">
       <Sky />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pt-10 sm:pt-16">
-        <div className="flex items-center justify-between font-display text-xl text-paper drop-shadow-[2px_2px_0_#181020]">
-          <span>TGA 2026</span>
-          <span>{session ? profile?.username : <Link to="/entrar" className="underline decoration-2 underline-offset-4">entrar</Link>}</span>
+        {/* HUD de NES: rótulo em cima, valor embaixo */}
+        <div className="grid grid-cols-3 gap-4 font-display uppercase leading-none text-paper drop-shadow-[2px_2px_0_#181020]">
+          <div>
+            <div className="text-lg sm:text-xl">TGA 2026</div>
+            <div className="mt-1 text-2xl sm:text-3xl">10 dez</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg sm:text-xl">Cerimônia</div>
+            <div className="mt-1 text-2xl text-coin sm:text-3xl">
+              {days > 1 ? `${days} dias` : days === 1 ? 'amanhã' : 'é hoje!'}
+            </div>
+          </div>
+          <div className="min-w-0 text-right">
+            <div className="text-lg sm:text-xl">Jogador</div>
+            <div className="mt-1 truncate text-2xl normal-case sm:text-3xl">
+              {session ? (
+                profile?.username ?? '...'
+              ) : (
+                <Link to="/entrar" className="underline decoration-2 underline-offset-4">
+                  Entrar
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-10 grid items-center gap-10 md:grid-cols-[1.15fr_1fr]">
+        <div className="mt-8 grid sm:mt-10 items-center gap-10 md:grid-cols-[1.15fr_1fr]">
           <div>
             <h1 className="font-display leading-[0.8] text-paper" style={{ textShadow: '4px 4px 0 #181020, -4px 0 0 #181020, 0 -4px 0 #181020, 4px 0 0 #181020, 0 4px 0 #181020, 8px 8px 0 #3c6ad8' }}>
               <span className="block text-[clamp(4rem,12vw,8.5rem)]">Bolão</span>
               <span className="block text-[clamp(4rem,12vw,8.5rem)] text-coin">do GOTY</span>
             </h1>
-            <p className="mt-6 max-w-md font-body text-lg leading-snug text-ink">
+            <p className="mt-6 max-w-[26rem] font-body text-lg leading-snug text-ink sm:text-xl">
               Palpite nos vencedores do The Game Awards com os amigos. Acertou, ganhou moeda pra vestir o seu boneco.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-5">
+            <div className="mt-8 flex items-center gap-5">
               <button type="button" className="btn text-3xl" onClick={start}>
                 Press start
               </button>
-              <span className="font-display text-2xl text-ink">
-                {days > 0 ? <>faltam <span className="text-paper drop-shadow-[2px_2px_0_#181020]">{days}</span> dias pra cerimônia</> : 'é hoje!'}
+              <span className="hidden font-display text-2xl text-ink sm:inline">
+                ou aperte <kbd className="px-box-flat bg-paper px-2 font-display">Enter</kbd>
               </span>
             </div>
           </div>
 
-          <div className="relative mx-auto">
-            <div className="px-box flex items-end gap-2 bg-sky-pale p-4 pb-0">
+          {/* card de seleção de personagem: o prêmio do pódio (AD-007) numa placa, sem selo flutuante */}
+          <figure className="px-box mx-auto w-[228px] bg-sky-pale">
+            <div className="flex justify-center px-4 pt-4">
               <Sprite avatar={PARADE[1]} size={180} bob transparent />
             </div>
-            <div className="absolute -top-6 -right-4 rotate-6">
-              <div className="px-box flex items-center gap-2 px-3 py-2">
-                <CoinIcon size={22} spin />
-                <span className="font-display text-xl leading-none">+100 pelo <Ord n={1} /> lugar</span>
-              </div>
-            </div>
-          </div>
+            <figcaption className="flex items-center justify-between gap-2 border-t-4 border-ink bg-paper px-3 py-2 font-display text-2xl leading-none">
+              <span>
+                <Ord n={1} /> lugar
+              </span>
+              <span className="flex items-center gap-1.5">
+                <CoinIcon size={20} spin />
+                +100
+              </span>
+            </figcaption>
+          </figure>
         </div>
 
         <button
@@ -111,8 +140,13 @@ export default function Title() {
           className="px-dialog mt-14 block w-full p-6 text-left sm:px-8"
           aria-label="Próxima fala"
         >
-          <div className="mb-2 flex items-center gap-2 font-display text-xl text-coin">
-            <TrophyIcon size={20} /> Apresentador
+          <div className="mb-2 flex items-center justify-between gap-2 font-display text-xl leading-none">
+            <span className="flex items-center gap-2 text-coin">
+              <TrophyIcon size={20} /> Apresentador
+            </span>
+            <span className="text-paper/60 tabular-nums">
+              {tw.line + 1}/{LINES.length}
+            </span>
           </div>
           <p className="min-h-[3.5em] font-body text-xl leading-snug sm:text-2xl">
             {tw.text}

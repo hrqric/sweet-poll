@@ -535,8 +535,8 @@ export const SLOT_LABEL: Record<Slot, string> = {
 }
 
 export const RARITY: Record<string, { label: string; color: string }> = {
-  comum: { label: 'Comum', color: '#7c7c7c' },
+  comum: { label: 'Comum', color: '#5c5c64' },
   raro: { label: 'Raro', color: '#0078f8' },
   epico: { label: 'Épico', color: '#a03ca0' },
-  lendario: { label: 'Lendário', color: '#e45c10' },
+  lendario: { label: 'Lendário', color: '#c84c0c' },
 }

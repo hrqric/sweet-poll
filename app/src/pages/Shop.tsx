@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase, errMsg, type Profile, type ShopItem } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { DEFAULT_AVATAR, RARITY, SLOT_LABEL, SLOTS, type Avatar, type Slot } from '../lib/sprites'
 import { Sprite } from '../components/Sprite'
-import { CoinIcon, Coins, Loading, useToast } from '../components/ui'
+import { CoinIcon, Coins, Loading, Tag, useToast } from '../components/ui'
 
 type Filter = Slot | 'mine'
 
@@ -37,7 +37,18 @@ export default function Shop() {
     [items, filter, owned],
   )
 
+  const fitting = useRef<HTMLElement>(null)
+
   if (!profile || !items) return <Loading />
+
+  function pick(item: ShopItem | null) {
+    setSelected(item)
+    sfx.select()
+    // no celular o provador fica lá em cima: sobe até ele pra ver o item no boneco
+    if (item && !window.matchMedia('(min-width: 1024px)').matches) {
+      fitting.current?.scrollIntoView({ block: 'start' })
+    }
+  }
 
   async function saveAvatar(next: Avatar) {
     const { data, error } = await supabase.from('profiles').update({ avatar: next }).eq('id', profile!.id).select('id, username, coins, avatar').single()
@@ -71,7 +82,7 @@ export default function Shop() {
 
   return (
     <div className="grid gap-10 lg:grid-cols-[340px_1fr]">
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside ref={fitting} className="scroll-mt-20 lg:sticky lg:top-24 lg:self-start">
         <div className="px-dialog p-6">
           <div className="flex items-center justify-between">
             <p className="font-display text-3xl leading-none text-coin">Provador</p>
@@ -84,11 +95,12 @@ export default function Shop() {
           </div>
           {sel ? (
             <div className="mt-6">
-              <p className="font-display text-sm leading-none uppercase" style={{ color: RARITY[sel.rarity].color === '#7c7c7c' ? '#bcbcbc' : RARITY[sel.rarity].color }}>
-                {RARITY[sel.rarity].label} · {SLOT_LABEL[sel.slot]}
+              <p className="font-display text-3xl leading-none">{sel.name}</p>
+              <p className="mt-2 flex items-center gap-2 text-sm text-paper-3">
+                <Tag color={RARITY[sel.rarity].color}>{RARITY[sel.rarity].label}</Tag>
+                {SLOT_LABEL[sel.slot]}
               </p>
-              <p className="mt-1 font-display text-3xl leading-none">{sel.name}</p>
-              <p className="mt-2 text-paper-3">{sel.description}</p>
+              <p className="mt-3 text-paper-3">{sel.description}</p>
               <div className="mt-5">
                 {selOwned ? (
                   <button type="button" className={`btn w-full ${selEquipped ? 'btn-paper' : 'btn-green'}`} onClick={() => toggleEquip(sel)} disabled={busy}>
@@ -96,13 +108,13 @@ export default function Shop() {
                   </button>
                 ) : (
                   <button type="button" className="btn w-full" onClick={() => buy(sel)} disabled={busy || profile.coins < sel.price}>
-                    <CoinIcon size={22} /> {profile.coins < sel.price ? `Faltam ${sel.price - profile.coins}` : `Comprar por ${sel.price}`}
+                    <CoinIcon size={22} /> {profile.coins < sel.price ? `Faltam ${sel.price - profile.coins} moedas` : `Comprar por ${sel.price}`}
                   </button>
                 )}
               </div>
             </div>
           ) : (
-            <p className="mt-6 text-paper-3">Clica num item pra provar. Moeda se ganha acertando palpite.</p>
+            <p className="mt-6 text-paper-3">Toca num item pra provar antes de comprar. Moeda vem de palpite certo.</p>
           )}
         </div>
       </aside>
@@ -136,23 +148,24 @@ export default function Shop() {
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => { setSelected(active ? null : item); sfx.select() }}
+                    onClick={() => pick(active ? null : item)}
                     aria-pressed={active}
-                    className={`px-box flex w-full flex-col text-left transition-transform hover:-translate-y-1 ${active ? '-translate-y-1 !bg-paper-2' : ''}`}
+                    className={`px-box relative flex w-full flex-col text-left hover:-translate-y-1 ${
+                      active ? '-translate-y-1 !bg-paper-2 outline-4 outline-offset-4 outline-coin' : ''
+                    }`}
                   >
-                    <div className="h-1.5 w-full" style={{ background: RARITY[item.rarity].color }} />
-                    <div className="flex justify-center pt-3">
+                    <Tag color={RARITY[item.rarity].color} className="absolute top-2 left-2">{RARITY[item.rarity].label}</Tag>
+                    <div className="flex justify-center pt-7">
                       <Sprite avatar={{ ...base, [item.slot]: item.id }} size={96} />
                     </div>
                     <div className="p-3 pt-2">
                       <p className="truncate font-semibold leading-tight">{item.name}</p>
-                      <div className="mt-1.5 flex items-center justify-between">
+                      <div className="mt-1.5 flex items-center">
                         {has ? (
                           <span className={`font-display text-lg leading-none ${on ? 'text-grass-dark' : 'text-muted'}`}>{on ? 'Equipado' : 'No baú'}</span>
                         ) : (
                           <Coins value={item.price} size={16} className={profile.coins < item.price ? 'opacity-50' : ''} />
                         )}
-                        <span className="text-xs" style={{ color: RARITY[item.rarity].color }}>{RARITY[item.rarity].label}</span>
                       </div>
                     </div>
                   </button>

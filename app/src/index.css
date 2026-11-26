@@ -39,6 +39,7 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
+  overflow-x: clip;
   font-family: var(--font-body);
   color: var(--color-ink);
   background: var(--color-sky);
@@ -91,6 +92,8 @@ svg {
     var(--px) 0 0 0 var(--color-ink);
 }
 
+/* botões e campos ficam na camada components pra utilities do Tailwind poderem sobrescrever */
+@layer components {
 /* ───── botões ───── */
 .btn {
   --btn-bg: var(--color-coin);
@@ -203,6 +206,8 @@ svg {
   color: #a89c84;
 }
 
+}
+
 /* ───── animações em degrau ───── */
 @keyframes bob {
   0%, 100% { transform: translateY(0); }
@@ -246,6 +251,19 @@ svg {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* foco de teclado bem visível, em pixel */
+[role='tab']:focus-visible,
+[role='radio']:focus-visible,
+a:focus-visible,
+button:not(.btn):focus-visible {
+  outline: var(--px) solid var(--color-coin);
+  outline-offset: 2px;
+}
+.field:focus-visible {
+  outline: var(--px) solid var(--color-coin);
+  outline-offset: calc(2 * var(--px));
 }
 
 /* rolagem fina com cara de jogo */

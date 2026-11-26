@@ -82,7 +82,7 @@ export function Loading({ label = 'Carregando' }: { label?: string }) {
 export function Tag({ children, color = '#181020', className = '' }: { children: ReactNode; color?: string; className?: string }) {
   return (
     <span
-      className={`inline-block px-1.5 pt-0.5 pb-1 font-display text-base leading-none text-paper ${className}`}
+      className={`inline-block px-2 pt-0.5 pb-1 font-display text-lg leading-none text-paper ${className}`}
       style={{ background: color }}
     >
       {children}
@@ -93,7 +93,7 @@ export function Tag({ children, color = '#181020', className = '' }: { children:
 export const STATUS_TAG = {
   open: { label: 'Palpites abertos', color: '#00a844' },
   locked: { label: 'Palpites fechados', color: '#c84c0c' },
-  finished: { label: 'Encerrado', color: '#3a3046' },
+  finished: { label: 'Encerrado', color: '#181020' },
 } as const
 
 // ───── modal ─────

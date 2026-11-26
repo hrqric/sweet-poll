@@ -13,7 +13,7 @@ import { useToast } from '../components/ui'
 
 function Swatches({ colors, value, onChange, label }: { colors: string[]; value: number; onChange: (i: number) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2.5">
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-x-2.5 gap-y-6 pt-4">
       {colors.map((c, i) => (
         <button
           key={c}
@@ -22,11 +22,12 @@ function Swatches({ colors, value, onChange, label }: { colors: string[]; value:
           aria-checked={value === i}
           aria-label={`${label} ${i + 1}`}
           onClick={() => { onChange(i); sfx.select() }}
-          className="relative h-9 w-9 px-box-flat"
+          className={`relative h-10 w-10 px-box-flat ${value === i ? '-translate-y-1' : ''}`}
           style={{ background: c }}
         >
+          {/* cursor de seleção estilo menu de NES */}
           {value === i && (
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 font-display text-xl leading-none text-ink">▼</span>
+            <span aria-hidden className="absolute -top-6 left-1/2 -translate-x-1/2 font-display text-2xl leading-none text-ink">▼</span>
           )}
         </button>
       ))}
@@ -105,7 +106,7 @@ export default function CharacterCreator() {
               className="btn btn-paper btn-sm mt-5"
               onClick={() => { setA(randomAvatar(a)); sfx.select() }}
             >
-              Sortear visual
+              Sortear
             </button>
           </div>
         </div>
