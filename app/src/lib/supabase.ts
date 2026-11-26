@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Avatar, Slot } from './sprites'
 
-const url = import.meta.env.VITE_SUPABASE_URL as string
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
+// tira BOM/espaços que alguns terminais colam junto do valor da variável
+const clean = (v: unknown) => String(v ?? '').replace(/^﻿/, '').trim()
+const url = clean(import.meta.env.VITE_SUPABASE_URL)
+const key = clean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
 
 if (!url || !key) {
   throw new Error('Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY em app/.env.local')
