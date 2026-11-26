@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
 import {
   supabase, errMsg, picksOpen,
-  type Category, type Member, type Pick, type Pool, type PoolPreview,
+  type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview,
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Head, Sprite } from '../components/Sprite'
@@ -507,11 +507,33 @@ function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => 
 }
 
 /** Bloco "+ categoria" no fim da lista do painel do host. */
-function AddCategory({ busy, onAdd }: { busy: boolean; onAdd: (name: string, points: number) => Promise<boolean> }) {
+type NewCategory = { catalogId: number; name?: never } | { name: string; catalogId?: never }
+
+function AddCategory({ busy, year, existing, onAdd }: {
+  busy: boolean
+  year: number
+  existing: string[]
+  onAdd: (src: NewCategory, points: number) => Promise<boolean>
+}) {
   const [open, setOpen] = useState(false)
+  const [src, setSrc] = useState<'catalog' | 'custom'>('catalog')
+  const [catalog, setCatalog] = useState<CatalogCategory[] | null>(null)
+  const [catalogId, setCatalogId] = useState('')
   const [name, setName] = useState('')
   const [points, setPoints] = useState(10)
-  const reset = () => { setOpen(false); setName(''); setPoints(10) }
+  const reset = () => { setOpen(false); setName(''); setCatalogId(''); setPoints(10) }
+
+  // a lista oficial só é buscada quando o host abre o formulário
+  useEffect(() => {
+    if (!open || catalog) return
+    supabase.from('tga_catalog').select('*').eq('year', year).order('position')
+      .then(({ data }) => setCatalog((data ?? []) as CatalogCategory[]))
+  }, [open, catalog, year])
+
+  const taken = new Set(existing.map((n) => n.toLowerCase()))
+  const available = (catalog ?? []).filter((c) => !taken.has(c.category.toLowerCase()))
+  const chosen = available.find((c) => String(c.id) === catalogId)
+  const canSubmit = src === 'catalog' ? Boolean(chosen) : Boolean(name.trim())
 
   if (!open) {
     return (
@@ -523,26 +545,60 @@ function AddCategory({ busy, onAdd }: { busy: boolean; onAdd: (name: string, poi
 
   return (
     <form
-      className="px-box mt-6 flex flex-wrap items-end gap-3 p-4"
+      className="px-box mt-6 p-4"
       onSubmit={async (e) => {
         e.preventDefault()
-        const n = name.trim()
-        if (!n) return
-        if (await onAdd(n, points)) reset()
+        if (!canSubmit) return
+        const ok = src === 'catalog' ? await onAdd({ catalogId: Number(catalogId) }, points) : await onAdd({ name: name.trim() }, points)
+        if (ok) reset()
       }}
     >
-      <label className="block min-w-[12rem] flex-1">
-        <span className="mb-1 block text-sm font-semibold">Nome da categoria</span>
-        <input
-          className="field"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="ex: Best Fighting Game"
-          maxLength={80}
-          autoFocus
-          onKeyDown={(e) => { if (e.key === 'Escape') reset() }}
-        />
-      </label>
+      <div className="mb-4 inline-grid grid-cols-2 border-4 border-ink" role="radiogroup" aria-label="De onde vem a categoria">
+        {([['catalog', 'Lista oficial'], ['custom', 'Escrever']] as const).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={src === v}
+            onClick={() => setSrc(v)}
+            className={`px-3 py-1.5 font-display text-xl leading-none ${src === v ? 'bg-ink text-paper' : 'bg-paper hover:bg-paper-2'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+      {src === 'catalog' ? (
+        <label className="block min-w-[12rem] flex-1">
+          <span className="mb-1 block text-sm font-semibold">Categoria do TGA {year}</span>
+          {!catalog ? (
+            <p className="py-2 text-muted">Carregando lista...</p>
+          ) : available.length === 0 ? (
+            <p className="py-2 text-muted">Todas as categorias oficiais já estão no bolão.</p>
+          ) : (
+            <select className="field" value={catalogId} onChange={(e) => setCatalogId(e.target.value)} autoFocus>
+              <option value="">Escolha...</option>
+              {available.map((c) => (
+                <option key={c.id} value={c.id}>{c.category} ({c.nominees.length} indicados)</option>
+              ))}
+            </select>
+          )}
+        </label>
+      ) : (
+        <label className="block min-w-[12rem] flex-1">
+          <span className="mb-1 block text-sm font-semibold">Nome da categoria</span>
+          <input
+            className="field"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="ex: Best Fighting Game"
+            maxLength={80}
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Escape') reset() }}
+          />
+        </label>
+      )}
       <label className="block w-24">
         <span className="mb-1 block text-sm font-semibold">Pontos</span>
         <input
@@ -554,8 +610,13 @@ function AddCategory({ busy, onAdd }: { busy: boolean; onAdd: (name: string, poi
           onChange={(e) => setPoints(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
         />
       </label>
-      <button type="submit" className="btn btn-sm" disabled={busy || !name.trim()}>Criar</button>
+      <button type="submit" className="btn btn-sm" disabled={busy || !canSubmit}>{src === 'catalog' ? 'Adicionar' : 'Criar'}</button>
       <button type="button" className="btn btn-sm btn-paper" onClick={reset} aria-label="Cancelar">✕</button>
+      </div>
+      {src === 'catalog' && chosen && (
+        <p className="mt-3 text-sm text-muted">Entra com: {chosen.nominees.map((n) => n.title).join(', ')}</p>
+      )}
+      {src === 'custom' && <p className="mt-3 text-sm text-muted">A categoria nasce vazia; depois use "+ Faltou um indicado" nela.</p>}
     </form>
   )
 }
@@ -648,8 +709,13 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
         </ol>
         <AddCategory
           busy={busy}
-          onAdd={async (name, points) => {
-            if (await rpc('add_category', { p_pool: pool.id, p_name: name, p_points: points }, `"${name}" criada. Agora coloque os indicados.`)) {
+          year={pool.year}
+          existing={cats.map((c) => c.name)}
+          onAdd={async (src, points) => {
+            const ok = src.catalogId !== undefined
+              ? await rpc('add_catalog_category', { p_pool: pool.id, p_catalog_id: src.catalogId, p_points: points }, 'Categoria da lista oficial adicionada, com os indicados.')
+              : await rpc('add_category', { p_pool: pool.id, p_name: src.name, p_points: points }, `"${src.name}" criada. Agora coloque os indicados.`)
+            if (ok) {
               sfx.select()
               onChange()
               return true
