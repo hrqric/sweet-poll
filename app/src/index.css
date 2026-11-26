@@ -261,9 +261,9 @@ button:not(.btn):focus-visible {
   outline: var(--px) solid var(--color-coin);
   outline-offset: 2px;
 }
+/* o foco do campo já aparece pela borda interna dourada (.field:focus) */
 .field:focus-visible {
-  outline: var(--px) solid var(--color-coin);
-  outline-offset: calc(2 * var(--px));
+  outline: none;
 }
 
 /* rolagem fina com cara de jogo */
