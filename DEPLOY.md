@@ -13,8 +13,9 @@ Nada abaixo foi executado ainda: são os passos pra uma pessoa fazer o deploy.
 - [ ] **Auth → URL Configuration**:
       - Site URL: `https://<seu-projeto>.vercel.app`
       - Redirect URLs: `https://<seu-projeto>.vercel.app/**` (mantenha `http://localhost:5173/**` pra dev)
-- [ ] **Auth → SMTP**: o e-mail embutido do Supabase manda poucas mensagens por hora.
-      Configure um SMTP (Resend, Brevo…) ou desligue "Confirm email" se for só entre amigos.
+- [x] **Auth → Confirm email desligado** (2026-11-26): cadastro entra direto, sem e-mail,
+      então o limite do e-mail embutido não trava mais. Se um dia quiser confirmação/recuperação
+      de senha, configure um SMTP (Resend, Brevo…) e religue.
 - [ ] **Auth → Password security**: ligar *Leaked password protection* (aviso do advisor).
 
 ## 2. Vercel
