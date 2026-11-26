@@ -261,6 +261,10 @@ button:not(.btn):focus-visible {
   outline: var(--px) solid var(--color-coin);
   outline-offset: 2px;
 }
+/* em página escura (modo cerimônia) o tracejado preto do .btn some no fundo */
+.on-dark .btn:focus-visible {
+  outline-color: var(--color-coin);
+}
 /* o foco do campo já aparece pela borda interna dourada (.field:focus) */
 .field:focus-visible {
   outline: none;
