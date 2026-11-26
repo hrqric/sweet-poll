@@ -47,6 +47,9 @@ const FIXED: Record<string, string> = {
   B: '#6c4410',
   M: '#5c3418',
   F: '#fca044',
+  Q: '#a8a8e0',
+  q: '#8848c8',
+  Z: '#5c2c8c',
 }
 
 export function shade(hex: string, f = 0.72): string {
@@ -374,6 +377,20 @@ export const ITEM_SPRITES: Record<string, ItemSprite> = {
       18: 'kwwwk',
       19: 'kwwwk',
       20: 'kwkwk',
+    },
+  },
+  // ciclope roxo de um olho só, pálpebra caída, pezinhos
+  eyeball: {
+    layer: {
+      13: '.kkk',
+      14: 'kQQQk',
+      15: 'kQQQQk',
+      16: 'kkkkkk',
+      17: 'kwwwwk',
+      18: 'kweewk',
+      19: 'kqqqqk',
+      20: 'kqqqZk',
+      21: 'kqkkqk',
     },
   },
   dragon: {
