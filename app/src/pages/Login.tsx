@@ -86,7 +86,10 @@ export default function Login() {
       <div className="mx-auto w-full max-w-md flex-1 px-4 pt-10 sm:pt-12">
         <Link to="/" className="mb-6 flex items-center justify-center gap-3 sm:mb-8">
           <TrophyIcon size={36} />
-          <span className="font-display text-5xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">Bolão GOTY</span>
+          <span className="font-display text-5xl leading-[0.8] text-paper drop-shadow-[3px_3px_0_#181020]">
+            <span className="block">Sweet</span>
+            <span className="block text-coin">Poll</span>
+          </span>
         </Link>
 
         {sent ? (

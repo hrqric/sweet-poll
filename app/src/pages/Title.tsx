@@ -101,8 +101,8 @@ export default function Title() {
         <div className="mt-8 grid sm:mt-10 items-center gap-10 md:grid-cols-[1.15fr_1fr]">
           <div>
             <h1 className="font-display leading-[0.8] text-paper" style={{ textShadow: '4px 4px 0 #181020, -4px 0 0 #181020, 0 -4px 0 #181020, 4px 0 0 #181020, 0 4px 0 #181020, 8px 8px 0 #3c6ad8' }}>
-              <span className="block text-[clamp(4rem,12vw,8.5rem)]">Bolão</span>
-              <span className="block text-[clamp(4rem,12vw,8.5rem)] text-coin">do GOTY</span>
+              <span className="block text-[clamp(4rem,12vw,8.5rem)]">Sweet</span>
+              <span className="block text-[clamp(4rem,12vw,8.5rem)] text-coin">Poll</span>
             </h1>
             <p className="mt-6 max-w-[26rem] font-body text-lg leading-snug text-ink sm:text-xl">
               Palpite nos vencedores do The Game Awards com os amigos. Acertou, ganhou moeda pra vestir o seu boneco.

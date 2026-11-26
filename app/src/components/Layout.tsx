@@ -61,9 +61,12 @@ export function Layout({ children }: { children: ReactNode }) {
       <Sky />
       <header className="sticky top-0 z-40 border-b-4 border-ink bg-paper">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 sm:gap-5">
-          <Link to="/hub" className="flex shrink-0 items-center gap-2" aria-label="Bolão GOTY — início">
+          <Link to="/hub" className="flex shrink-0 items-center gap-2" aria-label="Sweet Poll — início">
             <TrophyIcon size={28} />
-            <span className="hidden font-display text-2xl leading-none sm:inline">Bolão GOTY</span>
+            <span className="hidden font-display text-2xl leading-[0.75] sm:block">
+              <span className="block">Sweet</span>
+              <span className="block text-coin-dark">Poll</span>
+            </span>
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
             <NavLink to="/hub" className={navCls}>Bolões</NavLink>
