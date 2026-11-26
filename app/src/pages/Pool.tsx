@@ -319,6 +319,9 @@ function PicksTab({
                 </div>
               </header>
               <ul className="flex-1 p-2" role="radiogroup" aria-label={c.name}>
+                {c.pool_nominees.length === 0 && (
+                  <li className="px-3 py-2.5 text-muted">O host ainda vai colocar os indicados.</li>
+                )}
                 {c.pool_nominees.map((n) => {
                   const chosen = mine === n.id
                   const isWinner = winner === n.id
@@ -503,6 +506,60 @@ function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => 
   )
 }
 
+/** Bloco "+ categoria" no fim da lista do painel do host. */
+function AddCategory({ busy, onAdd }: { busy: boolean; onAdd: (name: string, points: number) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [points, setPoints] = useState(10)
+  const reset = () => { setOpen(false); setName(''); setPoints(10) }
+
+  if (!open) {
+    return (
+      <button type="button" className="btn btn-paper mt-6" onClick={() => setOpen(true)}>
+        + Faltou uma categoria
+      </button>
+    )
+  }
+
+  return (
+    <form
+      className="px-box mt-6 flex flex-wrap items-end gap-3 p-4"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        const n = name.trim()
+        if (!n) return
+        if (await onAdd(n, points)) reset()
+      }}
+    >
+      <label className="block min-w-[12rem] flex-1">
+        <span className="mb-1 block text-sm font-semibold">Nome da categoria</span>
+        <input
+          className="field"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="ex: Best Fighting Game"
+          maxLength={80}
+          autoFocus
+          onKeyDown={(e) => { if (e.key === 'Escape') reset() }}
+        />
+      </label>
+      <label className="block w-24">
+        <span className="mb-1 block text-sm font-semibold">Pontos</span>
+        <input
+          className="field"
+          type="number"
+          min={1}
+          max={1000}
+          value={points}
+          onChange={(e) => setPoints(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+        />
+      </label>
+      <button type="submit" className="btn btn-sm" disabled={busy || !name.trim()}>Criar</button>
+      <button type="button" className="btn btn-sm btn-paper" onClick={reset} aria-label="Cancelar">✕</button>
+    </form>
+  )
+}
+
 function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats: Category[]; open: boolean; onChange: () => void; onFinished: () => void }) {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
@@ -571,6 +628,9 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
                   )
                 })}
               </div>
+              {c.pool_nominees.length === 0 && (
+                <p className="text-sm text-muted">Sem indicados ainda. Adicione abaixo.</p>
+              )}
               <AddNominee
                 key={`add-${c.id}`}
                 busy={busy}
@@ -586,6 +646,17 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
             </li>
           ))}
         </ol>
+        <AddCategory
+          busy={busy}
+          onAdd={async (name, points) => {
+            if (await rpc('add_category', { p_pool: pool.id, p_name: name, p_points: points }, `"${name}" criada. Agora coloque os indicados.`)) {
+              sfx.select()
+              onChange()
+              return true
+            }
+            return false
+          }}
+        />
       </div>
 
       <div className="px-dialog flex flex-wrap items-center justify-between gap-4 p-6">
