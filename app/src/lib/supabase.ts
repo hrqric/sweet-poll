@@ -20,6 +20,8 @@ export type Profile = {
 }
 
 export type PoolStatus = 'open' | 'locked' | 'finished'
+/** flat: tudo vale igual · custom: host define por categoria · dynamic: base × multiplicador de dificuldade */
+export type Scoring = 'flat' | 'custom' | 'dynamic'
 
 export type Pool = {
   id: string
@@ -30,6 +32,8 @@ export type Pool = {
   mode: 'server' | 'user'
   year: number
   status: PoolStatus
+  scoring: Scoring
+  base_points: number
   lock_at: string | null
   created_at: string
   finished_at: string | null
@@ -42,6 +46,8 @@ export type Category = {
   name: string
   position: number
   points: number
+  /** só no modo dinâmico, e só depois que os palpites fecham */
+  multiplier: number | null
   winner_nominee_id: string | null
   pool_nominees: Nominee[]
 }
@@ -91,6 +97,11 @@ export type PoolPreview = {
 export function errMsg(e: unknown): string {
   if (e && typeof e === 'object' && 'message' in e) return String((e as { message: string }).message)
   return 'Algo deu errado. Tenta de novo?'
+}
+
+/** Pontos que um acerto na categoria vale de fato (multiplicador já aplicado). */
+export function catValue(c: { points: number; multiplier: number | null }): number {
+  return Math.round(c.points * (c.multiplier ?? 1))
 }
 
 export function picksOpen(pool: Pool): boolean {

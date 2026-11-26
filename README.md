@@ -43,6 +43,12 @@ Abre em http://localhost:5173.
 ## Regras do jogo
 
 - 150 moedas de boas-vindas.
+- Três jeitos de pontuar, escolhidos ao criar o bolão:
+  - **Tudo igual:** toda categoria vale os mesmos pontos.
+  - **Por categoria:** o host define quanto vale cada uma e pode mudar no painel do host até encerrar.
+  - **Dinâmica:** cada categoria vale `pontos base × multiplicador` (×1.00 a ×2.00). O multiplicador
+    é a entropia normalizada dos palpites do grupo: todo mundo no mesmo indicado = ×1, grupo totalmente
+    dividido = ×2. Só é calculado quando os palpites fecham (antes disso os palpites são secretos).
 - Ao encerrar: moedas = pontos feitos, + 100 / 50 / 25 pro pódio (se pontuou).
 - Palpites fecham no horário definido pelo host, quando ele fecha na mão, ou quando marca o primeiro vencedor.
 - Ninguém vê o palpite dos outros até os palpites fecharem.

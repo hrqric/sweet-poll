@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
 import {
-  supabase, errMsg, picksOpen,
+  supabase, errMsg, picksOpen, catValue,
   type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview,
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
@@ -129,7 +129,7 @@ function standings(members: Member[], cats: Category[], picks: Pick[], finished:
     picks.forEach((p) => {
       const c = winners.get(p.category_id)
       if (p.user_id === m.user_id && c && c.winner_nominee_id === p.nominee_id) {
-        score += c.points
+        score += catValue(c)
         hits++
       }
     })
@@ -159,7 +159,12 @@ function PoolRoom({ poolId }: { poolId: string }) {
     const err = p.error || c.error || m.error || k.error
     if (err) return toast(errMsg(err), 'err')
     setPool(p.data as Pool)
-    setCats(((c.data ?? []) as Category[]).map((x) => ({ ...x, pool_nominees: [...x.pool_nominees].sort((a, b) => a.position - b.position) })))
+    setCats(((c.data ?? []) as Category[]).map((x) => ({
+      ...x,
+      // numeric do Postgres pode chegar como string
+      multiplier: x.multiplier == null ? null : Number(x.multiplier),
+      pool_nominees: [...x.pool_nominees].sort((a, b) => a.position - b.position),
+    })))
     setMembers((m.data ?? []) as Member[])
     setPicks((k.data ?? []) as Pick[])
   }, [poolId, toast])
@@ -204,6 +209,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
             {pool.lock_at && open && (
               <Tag color="#3a3046">fecha {new Date(pool.lock_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</Tag>
             )}
+            <Tag color="#3c6ad8">{SCORING_LABEL[pool.scoring]}</Tag>
           </div>
           <h1 className="mt-3 font-display text-5xl leading-[0.9] text-paper drop-shadow-[3px_3px_0_#181020] sm:text-6xl">{pool.name}</h1>
           {pool.description && <p className="mt-2 max-w-xl text-lg">{pool.description}</p>}
@@ -253,7 +259,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
       </nav>
 
       {tab === 'picks' && (
-        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} finished={finished} meId={profile.id}
+        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} finished={finished} meId={profile.id} dynamic={pool.scoring === 'dynamic'}
           onPicked={(catId, nomId) => setPicks((ps) => [...ps.filter((p) => !(p.user_id === profile.id && p.category_id === catId)), { pool_id: pool.id, user_id: profile.id, category_id: catId, nominee_id: nomId }])}
         />
       )}
@@ -265,10 +271,30 @@ function PoolRoom({ poolId }: { poolId: string }) {
 
 // ───────────────────────── palpites ─────────────────────────
 
+const SCORING_LABEL = { flat: 'pontos iguais', custom: 'pontos por categoria', dynamic: 'pontuação dinâmica' } as const
+
+/** Valor da categoria no cabeçalho do card; no modo dinâmico mostra o multiplicador (ou "×?" antes de fechar). */
+function CatPoints({ c, dynamic }: { c: Category; dynamic: boolean }) {
+  if (!dynamic) return <span className="font-display text-2xl leading-none">{c.points} pts</span>
+  if (c.multiplier == null) {
+    return (
+      <span className="font-display text-2xl leading-none" title="O multiplicador sai quando os palpites fecharem">
+        {c.points} pts <span className="text-muted">×?</span>
+      </span>
+    )
+  }
+  return (
+    <span className="font-display text-2xl leading-none" title={`${c.points} pts base × ${c.multiplier.toFixed(2)}`}>
+      {catValue(c)} pts <span className="text-xl text-muted">×{c.multiplier.toFixed(1)}</span>
+    </span>
+  )
+}
+
 function PicksTab({
-  cats, picks, myPicks, members, open, finished, meId, onPicked,
+  cats, picks, myPicks, members, open, finished, meId, dynamic, onPicked,
 }: {
   cats: Category[]; picks: Pick[]; myPicks: Map<string, string>; members: Member[]; open: boolean; finished: boolean; meId: string
+  dynamic: boolean
   onPicked: (cat: string, nom: string) => void
 }) {
   const toast = useToast()
@@ -287,6 +313,12 @@ function PicksTab({
 
   return (
     <>
+      {open && dynamic && (
+        <p className="px-box mb-8 px-5 py-4 leading-snug">
+          <strong>Pontuação dinâmica:</strong> quando os palpites fecharem, cada categoria ganha um multiplicador de ×1 a ×2.
+          Se a galera inteira apostar no mesmo indicado, fica ×1. Quanto mais dividido o grupo, mais vale acertar.
+        </p>
+      )}
       {!open && (
         <p className="px-dialog mb-8 px-5 py-4 text-lg leading-snug">
           {finished ? (
@@ -309,7 +341,7 @@ function PicksTab({
                   {c.name}
                 </h3>
                 <div className="shrink-0 text-right">
-                  <span className="font-display text-2xl leading-none">{c.points} pts</span>
+                  <CatPoints c={c} dynamic={dynamic} />
                   {winner && mine && (
                     <span className={`mt-1 block font-display text-xl leading-none ${hit ? 'text-grass-dark' : 'text-red'}`}>
                       {hit ? 'Acertou!' : 'Errou'}
@@ -507,12 +539,47 @@ function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => 
 }
 
 /** Bloco "+ categoria" no fim da lista do painel do host. */
-type NewCategory = { catalogId: number; name?: never } | { name: string; catalogId?: never }
+/** Campo de pontos da categoria no painel do host (modo "por categoria"): salva ao sair do campo ou no Enter. */
+function PointsEditor({ value, busy, label, onSave }: { value: number; busy: boolean; label: string; onSave: (v: number) => Promise<void> }) {
+  const [v, setV] = useState(String(value))
+  // Enter salva e o blur que vem logo depois não pode salvar de novo
+  const sent = useRef(value)
+  const commit = () => {
+    const n = Math.max(1, Math.min(1000, Math.round(Number(v)) || value))
+    setV(String(n))
+    if (n !== sent.current) {
+      sent.current = n
+      onSave(n)
+    }
+  }
+  return (
+    <label className="flex shrink-0 items-center gap-1.5 font-display text-xl leading-none">
+      <input
+        className="field w-20 py-1 text-right text-base"
+        type="number"
+        min={1}
+        max={1000}
+        value={v}
+        disabled={busy}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit() } }}
+        aria-label={`Pontos de ${label}`}
+      />
+      pts
+    </label>
+  )
+}
 
-function AddCategory({ busy, year, existing, onAdd }: {
+type NewCategory ={ catalogId: number; name?: never } | { name: string; catalogId?: never }
+
+function AddCategory({ busy, year, existing, basePoints, choosePoints, onAdd }: {
   busy: boolean
   year: number
   existing: string[]
+  basePoints: number
+  /** só no modo "por categoria" o host escolhe os pontos; nos outros vale a base do bolão */
+  choosePoints: boolean
   onAdd: (src: NewCategory, points: number) => Promise<boolean>
 }) {
   const [open, setOpen] = useState(false)
@@ -520,8 +587,8 @@ function AddCategory({ busy, year, existing, onAdd }: {
   const [catalog, setCatalog] = useState<CatalogCategory[] | null>(null)
   const [catalogId, setCatalogId] = useState('')
   const [name, setName] = useState('')
-  const [points, setPoints] = useState(10)
-  const reset = () => { setOpen(false); setName(''); setCatalogId(''); setPoints(10) }
+  const [points, setPoints] = useState(basePoints)
+  const reset = () => { setOpen(false); setName(''); setCatalogId(''); setPoints(basePoints) }
 
   // a lista oficial só é buscada quando o host abre o formulário
   useEffect(() => {
@@ -599,17 +666,19 @@ function AddCategory({ busy, year, existing, onAdd }: {
           />
         </label>
       )}
-      <label className="block w-24">
-        <span className="mb-1 block text-sm font-semibold">Pontos</span>
-        <input
-          className="field"
-          type="number"
-          min={1}
-          max={1000}
-          value={points}
-          onChange={(e) => setPoints(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
-        />
-      </label>
+      {choosePoints && (
+        <label className="block w-24">
+          <span className="mb-1 block text-sm font-semibold">Pontos</span>
+          <input
+            className="field"
+            type="number"
+            min={1}
+            max={1000}
+            value={points}
+            onChange={(e) => setPoints(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+          />
+        </label>
+      )}
       <button type="submit" className="btn btn-sm" disabled={busy || !canSubmit}>{src === 'catalog' ? 'Adicionar' : 'Criar'}</button>
       <button type="button" className="btn btn-sm btn-paper" onClick={reset} aria-label="Cancelar">✕</button>
       </div>
@@ -666,7 +735,22 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
         <ol className="grid gap-6 md:grid-cols-2">
           {cats.map((c) => (
             <li key={c.id} className="px-box p-4">
-              <p className="mb-3 font-display text-2xl leading-none">{c.name}</p>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <p className="min-w-0 font-display text-2xl leading-none">{c.name}</p>
+                {pool.scoring === 'custom' ? (
+                  <PointsEditor
+                    key={`${c.id}-${c.points}`}
+                    value={c.points}
+                    busy={busy}
+                    label={c.name}
+                    onSave={async (v) => {
+                      if (await rpc('set_category_points', { p_category: c.id, p_points: v }, `${c.name} agora vale ${v} pts`)) onChange()
+                    }}
+                  />
+                ) : (
+                  <span className="shrink-0"><CatPoints c={c} dynamic={pool.scoring === 'dynamic'} /></span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {c.pool_nominees.map((n) => {
                   const on = c.winner_nominee_id === n.id
@@ -711,6 +795,8 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
           busy={busy}
           year={pool.year}
           existing={cats.map((c) => c.name)}
+          basePoints={pool.base_points}
+          choosePoints={pool.scoring === 'custom'}
           onAdd={async (src, points) => {
             const ok = src.catalogId !== undefined
               ? await rpc('add_catalog_category', { p_pool: pool.id, p_catalog_id: src.catalogId, p_points: points }, 'Categoria da lista oficial adicionada, com os indicados.')

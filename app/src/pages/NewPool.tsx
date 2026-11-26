@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { supabase, errMsg, type CatalogCategory, type Pool } from '../lib/supabase'
+import { supabase, errMsg, type CatalogCategory, type Pool, type Scoring } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Loading, Panel, useToast } from '../components/ui'
 
@@ -55,6 +55,8 @@ export default function NewPool() {
   const [description, setDescription] = useState('')
   const [mode, setMode] = useState<Mode>('server')
   const [points, setPoints] = useState(10)
+  const [scoring, setScoring] = useState<Scoring>('flat')
+  const [catPoints, setCatPoints] = useState<Record<number, number>>({})
   const [lockAt, setLockAt] = useState('2026-12-10T21:00')
   const [catalog, setCatalog] = useState<CatalogCategory[] | null>(null)
   const [picked, setPicked] = useState<Set<number>>(new Set())
@@ -131,6 +133,10 @@ export default function NewPool() {
       p_points: points,
       p_catalog_ids: mode === 'server' ? [...picked] : [],
       p_custom: mode === 'user' ? custom : [],
+      p_scoring: scoring,
+      p_catalog_points: mode === 'server' && scoring === 'custom'
+        ? Object.fromEntries([...picked].map((id) => [id, catPoints[id] ?? points]))
+        : {},
     })
     setBusy(false)
     if (error) return toast(errMsg(error), 'err')
@@ -167,6 +173,31 @@ export default function NewPool() {
         </div>
       </Panel>
 
+      <Panel title="Como pontua?">
+        <div role="radiogroup" className="grid gap-6 sm:grid-cols-3">
+          <ModeCard active={scoring === 'flat'} onClick={() => { setScoring('flat'); sfx.select() }} title="Tudo igual">
+            Toda categoria vale os mesmos pontos. Simples e justo.
+          </ModeCard>
+          <ModeCard active={scoring === 'custom'} onClick={() => { setScoring('custom'); sfx.select() }} title="Por categoria">
+            Você define quanto vale cada categoria. Dá pra mudar depois no painel do host.
+          </ModeCard>
+          <ModeCard active={scoring === 'dynamic'} onClick={() => { setScoring('dynamic'); sfx.select() }} title="Dinâmica">
+            Quando os palpites fecham, o site vê o quanto a galera se dividiu em cada categoria. Quanto mais dividido, maior o multiplicador (de ×1 a ×2).
+          </ModeCard>
+        </div>
+        <label className="mt-6 block max-w-xs">
+          <span className="mb-2 block font-semibold">
+            {scoring === 'flat' ? 'Pontos por acerto' : scoring === 'custom' ? 'Pontos padrão' : 'Pontos base'}
+          </span>
+          <input className="field" type="number" min={1} max={1000} value={points} onChange={(e) => setPoints(Number(e.target.value) || 1)} />
+          <span className="mt-2 block text-sm text-muted">
+            {scoring === 'flat' && 'Cada ponto vira 1 moeda no fim. Pódio ganha bônus de 100/50/25.'}
+            {scoring === 'custom' && 'Valor inicial de cada categoria; ajuste uma por uma na lista abaixo.'}
+            {scoring === 'dynamic' && `Uma categoria em que todo mundo concordou vale ${points}; uma em que ninguém concordou vale ${points * 2}.`}
+          </span>
+        </label>
+      </Panel>
+
       {mode === 'server' ? (
         <Panel
           title="Quais categorias valem"
@@ -189,8 +220,8 @@ export default function NewPool() {
                 {catalog.map((c) => {
                   const on = picked.has(c.id)
                   return (
-                    <li key={c.id}>
-                      <label className={`flex cursor-pointer items-start gap-3 px-2 py-2 ${on ? 'bg-paper-2' : 'hover:bg-paper-2/60'}`}>
+                    <li key={c.id} className={`flex items-center gap-2 ${on ? 'bg-paper-2' : ''}`}>
+                      <label className={`flex min-w-0 flex-1 cursor-pointer items-start gap-3 px-2 py-2 ${on ? '' : 'hover:bg-paper-2/60'}`}>
                         <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(c.id)} />
                         <span aria-hidden className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center px-box-flat ${on ? 'bg-grass' : 'bg-white'}`}>
                           {on && <PixelCheck />}
@@ -200,6 +231,18 @@ export default function NewPool() {
                           <span className="block truncate text-sm text-muted">{c.nominees.map((n) => n.title).join(' · ')}</span>
                         </span>
                       </label>
+                      {on && scoring === 'custom' && (
+                        <input
+                          className="field mr-2 w-20 shrink-0 py-1.5 text-sm"
+                          type="number"
+                          min={1}
+                          max={1000}
+                          value={catPoints[c.id] ?? points}
+                          onChange={(e) => setCatPoints((m) => ({ ...m, [c.id]: Math.max(1, Math.min(1000, Number(e.target.value) || 1)) }))}
+                          aria-label={`Pontos de ${c.category}`}
+                          title="Pontos desta categoria"
+                        />
+                      )}
                     </li>
                   )
                 })}
@@ -227,15 +270,17 @@ export default function NewPool() {
           <div className="space-y-6">
             {drafts.map((d, i) => (
               <div key={d.key} className="border-4 border-dashed border-paper-3 p-4">
-                <div className="grid gap-4 sm:grid-cols-[1fr_7rem_auto]">
+                <div className={`grid gap-4 ${scoring === 'custom' ? 'sm:grid-cols-[1fr_7rem_auto]' : 'sm:grid-cols-[1fr_auto]'}`}>
                   <label className="block">
                     <span className="mb-2 block font-semibold">Categoria {i + 1}</span>
                     <input className="field" value={d.name} onChange={(e) => updateDraft(d.key, { name: e.target.value })} placeholder="Pior trailer da noite" maxLength={80} />
                   </label>
-                  <label className="block">
-                    <span className="mb-2 block font-semibold">Pontos</span>
-                    <input className="field" type="number" min={1} max={1000} value={d.points} onChange={(e) => updateDraft(d.key, { points: Number(e.target.value) || 1 })} />
-                  </label>
+                  {scoring === 'custom' && (
+                    <label className="block">
+                      <span className="mb-2 block font-semibold">Pontos</span>
+                      <input className="field" type="number" min={1} max={1000} value={d.points} onChange={(e) => updateDraft(d.key, { points: Number(e.target.value) || 1 })} />
+                    </label>
+                  )}
                   {drafts.length > 1 && (
                     <button type="button" className="btn btn-red btn-sm self-end" onClick={() => setDrafts((ds) => ds.filter((x) => x.key !== d.key))} aria-label={`Remover categoria ${i + 1}`}>
                       Tirar
@@ -260,13 +305,8 @@ export default function NewPool() {
         </Panel>
       )}
 
-      <Panel title="Pontos e prazo">
+      <Panel title="Prazo">
         <div className="grid gap-6 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block font-semibold">Pontos por acerto</span>
-            <input className="field" type="number" min={1} max={1000} value={points} onChange={(e) => setPoints(Number(e.target.value) || 1)} />
-            <span className="mt-2 block text-sm text-muted">Cada ponto vira 1 moeda no fim. Pódio ganha bônus de 100/50/25.</span>
-          </label>
           <label className="block">
             <span className="mb-2 block font-semibold">Palpites fecham em</span>
             <input className="field" type="datetime-local" value={lockAt} onChange={(e) => setLockAt(e.target.value)} />
@@ -279,12 +319,12 @@ export default function NewPool() {
       <div className="px-dialog sticky bottom-4 z-10 flex items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
         <p className="min-w-0 font-display text-2xl leading-tight">
           <span className="text-coin">{catCount}</span> {catCount === 1 ? 'categoria' : 'categorias'}
-          {mode === 'server' && (
-            <span className="hidden sm:inline">
-              <span className="text-paper-3"> · </span>
-              <span className="text-coin">{points}</span> pts por acerto
-            </span>
-          )}
+          <span className="hidden sm:inline">
+            <span className="text-paper-3"> · </span>
+            {scoring === 'flat' && <><span className="text-coin">{points}</span> pts por acerto</>}
+            {scoring === 'custom' && 'pontos por categoria'}
+            {scoring === 'dynamic' && <>pontuação dinâmica <span className="text-coin">{points}</span>–<span className="text-coin">{points * 2}</span></>}
+          </span>
           {lockLabel && <span className="hidden text-xl text-paper-3 sm:inline"> · fecha {lockLabel}</span>}
         </p>
         <button type="submit" className="btn btn-green text-2xl sm:text-3xl" disabled={busy}>
