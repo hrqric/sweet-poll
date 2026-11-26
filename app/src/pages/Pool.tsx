@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
 import {
   supabase, errMsg, picksOpen, catValue,
-  type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview,
+  type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview, type Scoring,
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Head, Sprite } from '../components/Sprite'
@@ -539,6 +539,68 @@ function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => 
 }
 
 /** Bloco "+ categoria" no fim da lista do painel do host. */
+const SCORING_HELP: Record<Scoring, string> = {
+  flat: 'Toda categoria vale os mesmos pontos.',
+  custom: 'Cada categoria tem seus pontos; ajuste no campo ao lado do nome de cada uma.',
+  dynamic: 'Pontos base × multiplicador de ×1 a ×2, conforme o quanto o grupo se dividiu. Sai quando os palpites fecham.',
+}
+
+/** Bloco do painel do host pra trocar o tipo de pontuação e os pontos base. */
+function ScoringBox({ pool, busy, onSave }: { pool: Pool; busy: boolean; onSave: (s: Scoring, base: number) => Promise<void> }) {
+  const [scoring, setScoring] = useState<Scoring>(pool.scoring)
+  const [base, setBase] = useState(pool.base_points)
+  const dirty = scoring !== pool.scoring || base !== pool.base_points
+  // sair do "por categoria" apaga os pontos individuais: vale avisar antes
+  const wipes = pool.scoring === 'custom' && scoring !== 'custom'
+
+  return (
+    <div className="px-box p-5">
+      <p className="font-display text-3xl leading-none">Pontuação</p>
+      <div className="mt-4 inline-grid grid-cols-3 border-4 border-ink" role="radiogroup" aria-label="Tipo de pontuação">
+        {(['flat', 'custom', 'dynamic'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="radio"
+            aria-checked={scoring === s}
+            onClick={() => { setScoring(s); sfx.select() }}
+            className={`px-3 py-2 font-display text-lg leading-none sm:text-xl ${scoring === s ? 'bg-ink text-paper' : 'bg-paper hover:bg-paper-2'} ${s !== 'dynamic' ? 'border-r-4 border-ink' : ''}`}
+          >
+            {s === 'flat' ? 'Tudo igual' : s === 'custom' ? 'Por categoria' : 'Dinâmica'}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 max-w-xl text-muted">{SCORING_HELP[scoring]}</p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <label className="block w-36">
+          <span className="mb-1 block text-sm font-semibold">
+            {scoring === 'flat' ? 'Pontos por acerto' : scoring === 'custom' ? 'Pontos padrão' : 'Pontos base'}
+          </span>
+          <input
+            className="field"
+            type="number"
+            min={1}
+            max={1000}
+            value={base}
+            onChange={(e) => setBase(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+          />
+        </label>
+        <button type="button" className="btn btn-sm" disabled={busy || !dirty} onClick={() => onSave(scoring, base)}>
+          Salvar pontuação
+        </button>
+        {dirty && (
+          <button type="button" className="btn btn-sm btn-paper" onClick={() => { setScoring(pool.scoring); setBase(pool.base_points) }}>
+            Desfazer
+          </button>
+        )}
+      </div>
+      {dirty && wipes && (
+        <p className="mt-3 text-sm text-red">Os pontos que você definiu em cada categoria vão ser trocados por {base} em todas.</p>
+      )}
+    </div>
+  )
+}
+
 /** Campo de pontos da categoria no painel do host (modo "por categoria"): salva ao sair do campo ou no Enter. */
 function PointsEditor({ value, busy, label, onSave }: { value: number; busy: boolean; label: string; onSave: (v: number) => Promise<void> }) {
   const [v, setV] = useState(String(value))
@@ -726,6 +788,18 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
           {open ? 'Fechar palpites' : 'Reabrir palpites'}
         </button>
       </div>
+
+      <ScoringBox
+        key={`${pool.scoring}-${pool.base_points}`}
+        pool={pool}
+        busy={busy}
+        onSave={async (scoring, base) => {
+          if (await rpc('set_scoring', { p_pool: pool.id, p_scoring: scoring, p_base_points: base }, `Pontuação agora: ${SCORING_LABEL[scoring]}`)) {
+            sfx.confirm()
+            onChange()
+          }
+        }}
+      />
 
       <div>
         <h2 className="mb-4 flex items-baseline gap-3 font-display text-4xl leading-none text-paper drop-shadow-[3px_3px_0_#181020]">
