@@ -22,6 +22,14 @@ export type Profile = {
 export type PoolStatus = 'open' | 'locked' | 'finished'
 /** flat: tudo vale igual · custom: host define por categoria · dynamic: base × multiplicador de dificuldade */
 export type Scoring = 'flat' | 'custom' | 'dynamic'
+/** anonymous: só quem acertou aparece · closed: todos ao fechar os palpites · public: todos sempre */
+export type PicksVisibility = 'anonymous' | 'closed' | 'public'
+
+export const VISIBILITY_INFO: Record<PicksVisibility, { label: string; help: string }> = {
+  anonymous: { label: 'Anônimo', help: 'Ninguém vê o palpite de ninguém. Quando sai o vencedor, só aparece quem acertou.' },
+  closed: { label: 'Fechado', help: 'Os palpites de todo mundo aparecem quando os palpites fecham.' },
+  public: { label: 'Público', help: 'Todo mundo vê o palpite de todo mundo, ao vivo, desde o começo.' },
+}
 
 export type Pool = {
   id: string
@@ -36,6 +44,7 @@ export type Pool = {
   base_points: number
   /** vencedores das categorias oficiais vêm sozinhos da Wikipédia */
   auto_results: boolean
+  picks_visibility: PicksVisibility
   lock_at: string | null
   created_at: string
   finished_at: string | null

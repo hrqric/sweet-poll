@@ -51,7 +51,10 @@ Abre em http://localhost:5173.
     dividido = ×2. Só é calculado quando os palpites fecham (antes disso os palpites são secretos).
 - Ao encerrar: moedas = pontos feitos, + 100 / 50 / 25 pro pódio (se pontuou).
 - Palpites fecham no horário definido pelo host, quando ele fecha na mão, ou quando marca o primeiro vencedor.
-- Ninguém vê o palpite dos outros até os palpites fecharem.
+- Quem vê o palpite de quem é escolha do host (na criação ou no painel), garantida por RLS:
+  - **Anônimo:** ninguém vê nada; quando sai o vencedor de uma categoria, aparece só quem acertou.
+  - **Fechado** (padrão): todos os palpites aparecem quando os palpites fecham.
+  - **Público:** todo mundo vê tudo, ao vivo, desde o começo.
 - Toda regra de moeda/ponto roda no Postgres (`security definer`); o cliente não consegue escrever `coins`.
 
 ## Loja

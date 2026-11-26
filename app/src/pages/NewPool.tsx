@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { supabase, errMsg, type CatalogCategory, type Pool, type Scoring } from '../lib/supabase'
+import { supabase, errMsg, VISIBILITY_INFO, type CatalogCategory, type PicksVisibility, type Pool, type Scoring } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
 import { Loading, Panel, useToast } from '../components/ui'
 
@@ -57,6 +57,7 @@ export default function NewPool() {
   const [points, setPoints] = useState(10)
   const [scoring, setScoring] = useState<Scoring>('flat')
   const [catPoints, setCatPoints] = useState<Record<number, number>>({})
+  const [visibility, setVisibility] = useState<PicksVisibility>('closed')
   const [lockAt, setLockAt] = useState('2026-12-10T21:00')
   const [catalog, setCatalog] = useState<CatalogCategory[] | null>(null)
   const [picked, setPicked] = useState<Set<number>>(new Set())
@@ -138,8 +139,11 @@ export default function NewPool() {
         ? Object.fromEntries([...picked].map((id) => [id, catPoints[id] ?? points]))
         : {},
     })
+    if (error) { setBusy(false); return toast(errMsg(error), 'err') }
+    if (visibility !== 'closed') {
+      await supabase.rpc('set_picks_visibility', { p_pool: (data as Pool).id, p_visibility: visibility })
+    }
     setBusy(false)
-    if (error) return toast(errMsg(error), 'err')
     sfx.win()
     toast('Bolão criado! Agora é só mandar o link.', 'coin')
     navigate(`/b/${(data as Pool).invite_code}`)
@@ -304,6 +308,17 @@ export default function NewPool() {
           </div>
         </Panel>
       )}
+
+      <Panel title="Quem vê o palpite de quem?">
+        <div role="radiogroup" className="grid gap-6 sm:grid-cols-3">
+          {(['anonymous', 'closed', 'public'] as const).map((v) => (
+            <ModeCard key={v} active={visibility === v} onClick={() => { setVisibility(v); sfx.select() }} title={VISIBILITY_INFO[v].label}>
+              {VISIBILITY_INFO[v].help}
+            </ModeCard>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-muted">Cada um sempre vê o próprio palpite. Dá pra mudar depois no painel do host.</p>
+      </Panel>
 
       <Panel title="Prazo">
         <div className="grid gap-6 sm:grid-cols-2">

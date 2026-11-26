@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { motion } from 'motion/react'
 import { useAuth } from '../lib/auth'
 import {
-  supabase, errMsg, picksOpen, catValue,
+  supabase, errMsg, picksOpen, catValue, VISIBILITY_INFO, type PicksVisibility,
   type CatalogCategory, type Category, type Member, type Pick, type Pool, type PoolPreview, type Scoring, type TgaSync,
 } from '../lib/supabase'
 import { sfx } from '../lib/sfx'
@@ -176,6 +176,8 @@ function PoolRoom({ poolId }: { poolId: string }) {
       .channel(`pool-${poolId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pool_categories', filter: `pool_id=eq.${poolId}` }, () => reload())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pools', filter: `id=eq.${poolId}` }, () => { reload(); refreshProfile() })
+      // modo público: palpite novo de um amigo aparece sem recarregar (o RLS filtra o que cada um recebe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'picks', filter: `pool_id=eq.${poolId}` }, () => reload())
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [poolId, reload, refreshProfile])
@@ -210,6 +212,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
               <Tag color="#3a3046">fecha {new Date(pool.lock_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</Tag>
             )}
             <Tag color="#3c6ad8">{SCORING_LABEL[pool.scoring]}</Tag>
+            <Tag color="#3a3046">palpites: {VISIBILITY_INFO[pool.picks_visibility].label.toLowerCase()}</Tag>
           </div>
           <h1 className="mt-3 font-display text-5xl leading-[0.9] text-paper drop-shadow-[3px_3px_0_#181020] sm:text-6xl">{pool.name}</h1>
           {pool.description && <p className="mt-2 max-w-xl text-lg">{pool.description}</p>}
@@ -259,7 +262,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
       </nav>
 
       {tab === 'picks' && (
-        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} finished={finished} meId={profile.id} dynamic={pool.scoring === 'dynamic'}
+        <PicksTab cats={cats} picks={picks} myPicks={myPicks} members={members} open={open} finished={finished} meId={profile.id} dynamic={pool.scoring === 'dynamic'} visibility={pool.picks_visibility}
           onPicked={(catId, nomId) => setPicks((ps) => [...ps.filter((p) => !(p.user_id === profile.id && p.category_id === catId)), { pool_id: pool.id, user_id: profile.id, category_id: catId, nominee_id: nomId }])}
         />
       )}
@@ -291,10 +294,11 @@ function CatPoints({ c, dynamic }: { c: Category; dynamic: boolean }) {
 }
 
 function PicksTab({
-  cats, picks, myPicks, members, open, finished, meId, dynamic, onPicked,
+  cats, picks, myPicks, members, open, finished, meId, dynamic, visibility, onPicked,
 }: {
   cats: Category[]; picks: Pick[]; myPicks: Map<string, string>; members: Member[]; open: boolean; finished: boolean; meId: string
   dynamic: boolean
+  visibility: PicksVisibility
   onPicked: (cat: string, nom: string) => void
 }) {
   const toast = useToast()
@@ -323,9 +327,18 @@ function PicksTab({
         <p className="px-dialog mb-8 px-5 py-4 text-lg leading-snug">
           {finished ? (
             <>Fim de papo. <span className="text-coin">Amarelo</span> é quem levou, <span className="text-coin">▶</span> é o seu palpite.</>
+          ) : visibility === 'anonymous' ? (
+            <>Palpites travados. Bolão anônimo: quando sair cada vencedor, aparece só quem acertou.</>
           ) : (
             <>Palpites travados. Agora é torcer: cada carinha mostra quem apostou em quem.</>
           )}
+        </p>
+      )}
+      {open && visibility !== 'closed' && (
+        <p className="px-box mb-8 px-5 py-4 leading-snug">
+          {visibility === 'public'
+            ? <><strong>Bolão público:</strong> todo mundo vê o palpite de todo mundo, ao vivo.</>
+            : <><strong>Bolão anônimo:</strong> ninguém vê o seu palpite. Quando sair o vencedor, só aparece quem acertou.</>}
         </p>
       )}
       <ol className="grid gap-8 md:grid-cols-2">
@@ -357,7 +370,9 @@ function PicksTab({
                 {c.pool_nominees.map((n) => {
                   const chosen = mine === n.id
                   const isWinner = winner === n.id
-                  const backers = open ? [] : picks.filter((p) => p.nominee_id === n.id)
+                  // o banco já só manda os palpites que o modo permite; aqui só decide onde desenhar
+                  const showHeads = visibility === 'public' || (visibility === 'closed' && !open) || (visibility === 'anonymous' && isWinner)
+                  const backers = showHeads ? picks.filter((p) => p.nominee_id === n.id) : []
                   return (
                     <li key={n.id}>
                       <button
@@ -858,6 +873,32 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
         >
           {open ? 'Fechar palpites' : 'Reabrir palpites'}
         </button>
+      </div>
+
+      <div className="px-box p-5">
+        <p className="font-display text-3xl leading-none">Quem vê o palpite de quem</p>
+        <div className="mt-4 inline-grid grid-cols-3 border-4 border-ink" role="radiogroup" aria-label="Visibilidade dos palpites">
+          {(['anonymous', 'closed', 'public'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={pool.picks_visibility === v}
+              disabled={busy}
+              onClick={async () => {
+                if (v === pool.picks_visibility) return
+                if (await rpc('set_picks_visibility', { p_pool: pool.id, p_visibility: v }, `Palpites agora: ${VISIBILITY_INFO[v].label.toLowerCase()}`)) {
+                  sfx.select()
+                  onChange()
+                }
+              }}
+              className={`px-3 py-2 font-display text-lg leading-none sm:text-xl ${pool.picks_visibility === v ? 'bg-ink text-paper' : 'bg-paper hover:bg-paper-2'} ${v !== 'public' ? 'border-r-4 border-ink' : ''}`}
+            >
+              {VISIBILITY_INFO[v].label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 max-w-xl text-muted">{VISIBILITY_INFO[pool.picks_visibility].help} Cada um sempre vê o próprio palpite.</p>
       </div>
 
       <AutoResultsBox
