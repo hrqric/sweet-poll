@@ -458,6 +458,51 @@ function RankingTab({ table, open, finished, cats, meId }: { table: Standing[]; 
 
 // ───────────────────────── painel do host ─────────────────────────
 
+/** Linha "+ indicado" do painel do host: abre um campo pra incluir quem ficou de fora. */
+function AddNominee({ busy, onAdd }: { busy: boolean; onAdd: (title: string) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="mt-3 font-body text-sm font-semibold text-muted underline decoration-2 underline-offset-4 hover:text-ink"
+        onClick={() => setOpen(true)}
+      >
+        + Faltou um indicado
+      </button>
+    )
+  }
+
+  return (
+    <form
+      className="mt-3 flex gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        const t = title.trim()
+        if (!t) return
+        if (await onAdd(t)) { setTitle(''); setOpen(false) }
+      }}
+    >
+      <input
+        className="field py-1.5 text-sm"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Nome do indicado"
+        maxLength={120}
+        autoFocus
+        aria-label="Nome do novo indicado"
+        onKeyDown={(e) => { if (e.key === 'Escape') { setOpen(false); setTitle('') } }}
+      />
+      <button type="submit" className="btn btn-sm shrink-0" disabled={busy || !title.trim()}>Adicionar</button>
+      <button type="button" className="btn btn-sm btn-paper shrink-0" onClick={() => { setOpen(false); setTitle('') }} aria-label="Cancelar">
+        ✕
+      </button>
+    </form>
+  )
+}
+
 function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats: Category[]; open: boolean; onChange: () => void; onFinished: () => void }) {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
@@ -526,6 +571,18 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
                   )
                 })}
               </div>
+              <AddNominee
+                key={`add-${c.id}`}
+                busy={busy}
+                onAdd={async (title) => {
+                  if (await rpc('add_nominee', { p_category: c.id, p_title: title }, `${title} entrou em ${c.name}`)) {
+                    sfx.select()
+                    onChange()
+                    return true
+                  }
+                  return false
+                }}
+              />
             </li>
           ))}
         </ol>
