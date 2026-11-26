@@ -217,6 +217,12 @@ function PoolRoom({ poolId }: { poolId: string }) {
           <h1 className="mt-3 font-display text-5xl leading-[0.9] text-paper drop-shadow-[3px_3px_0_#181020] sm:text-6xl">{pool.name}</h1>
           {pool.description && <p className="mt-2 max-w-xl text-lg">{pool.description}</p>}
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        {!finished && (
+          <Link to={`/b/${pool.invite_code}/ao-vivo`} className="btn btn-ink" title="Transmissão com os vencedores e quem acertou aparecendo por cima">
+            Modo cerimônia
+          </Link>
+        )}
         <div className="px-box flex items-center gap-3 p-3">
           <div>
             <p className="text-sm text-muted">Convite</p>
@@ -236,6 +242,7 @@ function PoolRoom({ poolId }: { poolId: string }) {
           >
             Copiar link
           </button>
+        </div>
         </div>
       </header>
 
@@ -899,6 +906,28 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
           ))}
         </div>
         <p className="mt-3 max-w-xl text-muted">{VISIBILITY_INFO[pool.picks_visibility].help} Cada um sempre vê o próprio palpite.</p>
+      </div>
+
+      <div className="px-box p-5">
+        <p className="font-display text-3xl leading-none">Telão da cerimônia</p>
+        <p className="mt-1 max-w-xl text-muted">
+          Vai transmitir o TGA no Discord? Adicione este link no OBS como fonte "Navegador" (1920×1080) por cima da transmissão:
+          a placa do vencedor com quem acertou aparece sozinha. Com <code>?demo=1</code> no fim ela repete um teste pra você posicionar.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <code className="px-box-flat min-w-0 flex-1 truncate bg-white px-3 py-2 text-sm">{`${window.location.origin}/b/${pool.invite_code}/overlay`}</code>
+          <button
+            type="button"
+            className="btn btn-sm btn-paper"
+            onClick={async () => {
+              const url = `${window.location.origin}/b/${pool.invite_code}/overlay`
+              if (await copyText(url)) { toast('Link do overlay copiado!'); sfx.select() }
+              else toast(`Não deu pra copiar. O link é ${url}`, 'err')
+            }}
+          >
+            Copiar
+          </button>
+        </div>
       </div>
 
       <AutoResultsBox

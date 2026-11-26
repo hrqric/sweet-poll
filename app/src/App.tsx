@@ -11,6 +11,8 @@ const Hub = lazy(() => import('./pages/Hub'))
 const NewPool = lazy(() => import('./pages/NewPool'))
 const PoolPage = lazy(() => import('./pages/Pool'))
 const Shop = lazy(() => import('./pages/Shop'))
+const Ceremony = lazy(() => import('./pages/Ceremony'))
+const Overlay = lazy(() => import('./pages/Overlay'))
 
 /** Exige login e personagem criado (AD-003). */
 function Gate({ children, allowNoAvatar = false }: { children: ReactNode; allowNoAvatar?: boolean }) {
@@ -30,6 +32,9 @@ export default function App() {
         <Route path="/" element={<Title />} />
         <Route path="/entrar" element={<Login />} />
         <Route path="/b/:code" element={<Layout><PoolPage /></Layout>} />
+        <Route path="/b/:code/ao-vivo" element={<Gate><Ceremony /></Gate>} />
+        {/* overlay do OBS: sem login, sem Suspense com céu azul por trás */}
+        <Route path="/b/:code/overlay" element={<Suspense fallback={null}><Overlay /></Suspense>} />
         <Route path="/personagem" element={<Gate allowNoAvatar><CharacterCreator /></Gate>} />
         <Route path="/hub" element={<Gate><Layout><Hub /></Layout></Gate>} />
         <Route path="/bolao/novo" element={<Gate><Layout><NewPool /></Layout></Gate>} />
