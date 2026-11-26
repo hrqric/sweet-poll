@@ -10,6 +10,26 @@ import { sfx } from '../lib/sfx'
 import { Head, Sprite } from '../components/Sprite'
 import { Coins, CoinIcon, Loading, Modal, Ord, STATUS_TAG, Tag, TrophyIcon, useToast } from '../components/ui'
 
+/** Copia texto; se a Clipboard API falhar (http, permissão, iframe), cai no execCommand. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    let ok = false
+    try { ok = document.execCommand('copy') } catch { ok = false }
+    ta.remove()
+    return ok
+  }
+}
+
 // ───────────────────────── convite / entrada ─────────────────────────
 
 export default function PoolPage() {
@@ -197,11 +217,12 @@ function PoolRoom({ poolId }: { poolId: string }) {
             type="button"
             className="btn btn-sm"
             onClick={async () => {
-              try {
-                if (navigator.share) await navigator.share({ title: pool.name, text: `Entra no meu bolão do TGA: ${pool.name}`, url: link })
-                else { await navigator.clipboard.writeText(link); toast('Link copiado!') }
+              if (await copyText(link)) {
+                toast('Link copiado!')
                 sfx.select()
-              } catch { /* compartilhamento cancelado */ }
+              } else {
+                toast(`Não deu pra copiar. O link é ${link}`, 'err')
+              }
             }}
           >
             Copiar link
