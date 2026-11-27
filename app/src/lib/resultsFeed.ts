@@ -12,10 +12,12 @@ export type FeedResult = {
   winner_sub: string
   set_at: string | null
   hits: FeedHit[]
+  /** todos os participantes do bolão (bonecos, não palpites), pras cenas que mostram o grupo inteiro */
+  players: FeedHit[]
   /** só em teste: força uma cena específica em vez do sorteio */
   scene?: string
 }
-export type FeedPool = { id: string; name: string; status: string; members: number }
+export type FeedPool = { id: string; name: string; status: string; members: number; players: FeedHit[] }
 
 const keyOf = (r: FeedResult) => `${r.winner}|${r.set_at ?? ''}`
 
@@ -37,7 +39,9 @@ export function useResultsFeed(code: string, opts: { realtime?: boolean; interva
     const { data, error } = await supabase.rpc('pool_results_feed', { p_code: code })
     if (error || !data) { setError(true); return }
     setError(false)
-    const feed = data as { pool: FeedPool; results: FeedResult[] }
+    const raw = data as { pool: FeedPool; results: Omit<FeedResult, 'players'>[] }
+    const players = raw.pool.players ?? []
+    const feed = { pool: raw.pool, results: raw.results.map((r) => ({ ...r, players })) }
     setPool(feed.pool)
     setResults(feed.results)
     const next = new Map(feed.results.map((r) => [r.category_id, keyOf(r)]))
@@ -72,9 +76,11 @@ export function useResultsFeed(code: string, opts: { realtime?: boolean; interva
 }
 
 /** Resultado de mentira pra testar a animação (e posicionar o overlay no OBS). */
-export function demoResult(hits: FeedHit[], scene?: string): FeedResult {
+export function demoResult(hits: FeedHit[], scene?: string, players?: FeedHit[]): FeedResult {
   return {
     scene,
+    // sem lista de participantes, o grupo é quem acertou (ou um trio genérico, pras cenas de "ninguém")
+    players: players ?? hits,
     category_id: `demo-${Date.now()}`,
     category: 'Game of the Year',
     position: 0,

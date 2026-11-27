@@ -1,5 +1,8 @@
 import type { ComponentType } from 'react'
-import { sfx } from '../../lib/sfx'
+import { cue, sfx } from '../../lib/sfx'
+import { BossSlam } from './scenes/BossSlam'
+import { Wasted } from './scenes/Wasted'
+import { BombCritter } from './scenes/BombCritter'
 import type { FeedResult } from '../../lib/resultsFeed'
 import { CardA, MAX_SPRITES } from './CardA'
 import { DriveScene } from './DriveScene'
@@ -37,7 +40,12 @@ const cardA: Omit<SceneDef, 'id'> = {
  */
 export const SCENES: Record<Situation, SceneDef[]> = {
   solo: [{ id: 'drive-neon', name: 'Carro na cidade neon', Component: DriveScene, duration: () => 9500, sound: sfx.drive }],
-  none: [{ id: 'boat-fog', name: 'Barco na neblina', Component: BoatScene, duration: () => 9000, sound: sfx.sad }],
+  none: [
+    { id: 'boat-fog', name: 'Barco na neblina', Component: BoatScene, duration: () => 9000, sound: sfx.sad },
+    { id: 'boss-slam', name: 'Chefe da arena (YOU ALL DIED)', Component: BossSlam, duration: () => 10000, sound: cue([3.4, sfx.thud], [5.2, sfx.doom]) },
+    { id: 'wasted', name: 'Atropelados (WASTED)', Component: Wasted, duration: () => 9000, sound: cue([0.4, sfx.win], [3.0, sfx.crash], [4.1, sfx.doom]) },
+    { id: 'bomb-critter', name: 'Bicho-bomba', Component: BombCritter, duration: () => 10000, sound: cue([3.1, sfx.hiss], [4.9, sfx.boom]) },
+  ],
   duo: [{ id: 'card-a-duo', ...cardA }],
   group: [{ id: 'card-a', ...cardA }],
 }

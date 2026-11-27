@@ -119,8 +119,8 @@ export default function Ceremony() {
               if (!def) return
               const me = profile ? { username: profile.username, avatar: profile.avatar } : { username: 'voce', avatar: randomAvatar() }
               const n = { none: 0, solo: 1, duo: 2, group: 4 }[def.situation]
-              const hits = n === 0 ? [] : [me, ...Array.from({ length: n - 1 }, (_, i) => ({ username: `amigo_${i + 1}`, avatar: randomAvatar() }))]
-              setDemo(demoResult(hits, def.id))
+              const group = [me, ...Array.from({ length: 3 }, (_, i) => ({ username: `amigo_${i + 1}`, avatar: randomAvatar() }))]
+              setDemo(demoResult(group.slice(0, n), def.id, group))
             }}
           >
             <select

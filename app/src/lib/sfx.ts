@@ -40,4 +40,19 @@ export const sfx = {
   drive: () => tone([98, 110, 131, 147, 175, 196, 233, 262, 330, 392, 523, 659], 0.06, 'sawtooth', 0.045),
   // descendo devagar: ninguém acertou
   sad: () => tone([392, 370, 349, 330, 311, 262], 0.22, 'triangle', 0.08),
+  // pancada grave (espadão no chão)
+  thud: () => tone([131, 98, 73, 55, 41], 0.09, 'square', 0.1),
+  // freada + batida
+  crash: () => tone([1047, 988, 932, 880, 220, 110, 82], 0.05, 'sawtooth', 0.06),
+  // chiado curto
+  hiss: () => tone([1760, 1661, 1760, 1661, 1760, 1661], 0.08, 'sawtooth', 0.025),
+  // explosão
+  boom: () => tone([196, 165, 131, 110, 87, 65, 49], 0.08, 'sawtooth', 0.09),
+  // anúncio sombrio (letreiro de derrota)
+  doom: () => tone([147, 139, 131, 123], 0.35, 'triangle', 0.09),
+}
+
+/** Toca uma sequência de sons em tempos marcados (segundos desde o começo da cena). */
+export function cue(...pairs: [number, () => void][]) {
+  return () => pairs.forEach(([t, f]) => setTimeout(f, t * 1000))
 }

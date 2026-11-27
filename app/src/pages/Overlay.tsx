@@ -36,7 +36,8 @@ export default function Overlay() {
     const fake = () => {
       const def = ALL_SCENES[i++ % ALL_SCENES.length]
       const n = { none: 0, solo: 1, duo: 2, group: 4 }[def.situation]
-      setDemo(demoResult(players.slice(0, n).map((u, k) => ({ username: u, avatar: k === 0 ? DEFAULT_AVATAR : randomAvatar() })), def.id))
+      const group = players.map((u, k) => ({ username: u, avatar: k === 0 ? DEFAULT_AVATAR : randomAvatar() }))
+      setDemo(demoResult(group.slice(0, n), def.id, group))
     }
     fake()
     const t = setInterval(fake, 12_000)
