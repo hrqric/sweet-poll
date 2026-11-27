@@ -50,6 +50,20 @@ export const sfx = {
   boom: () => tone([196, 165, 131, 110, 87, 65, 49], 0.08, 'sawtooth', 0.09),
   // anúncio sombrio (letreiro de derrota)
   doom: () => tone([147, 139, 131, 123], 0.35, 'triangle', 0.09),
+  // carimbo batendo
+  stamp: () => tone([196, 98], 0.06, 'square', 0.1),
+  // assobio de faroeste
+  whistle: () => tone([988, 1175, 1319, 1175, 988, 880], 0.14, 'sine', 0.05),
+  // fanfarra de item raro (melodia própria)
+  fanfare: () => tone([523, 659, 784, 659, 784, 1047, 1047, 1319, 1568], 0.11, 'square', 0.06),
+  // vento cortando (machado girando)
+  whoosh: () => tone([440, 523, 622, 740, 880, 740, 622, 523, 440, 523, 622, 740, 880], 0.05, 'triangle', 0.04),
+  // brilho de gelo
+  ice: () => tone([1568, 2093, 1760, 2349, 2093, 2637], 0.06, 'sine', 0.04),
+  // nave descendo
+  land: () => tone([880, 784, 698, 622, 554, 494, 440, 392], 0.08, 'triangle', 0.05),
+  // fogos estourando
+  pop: () => tone([1319, 1047, 784, 523], 0.04, 'square', 0.05),
 }
 
 /** Toca uma sequência de sons em tempos marcados (segundos desde o começo da cena). */

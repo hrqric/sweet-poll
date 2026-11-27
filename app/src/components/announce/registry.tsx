@@ -3,6 +3,10 @@ import { cue, sfx } from '../../lib/sfx'
 import { BossSlam } from './scenes/BossSlam'
 import { Wasted } from './scenes/Wasted'
 import { BombCritter } from './scenes/BombCritter'
+import { WantedPoster } from './scenes/WantedPoster'
+import { LegendaryItem } from './scenes/LegendaryItem'
+import { AxeReturn } from './scenes/AxeReturn'
+import { SpaceParty } from './scenes/SpaceParty'
 import type { FeedResult } from '../../lib/resultsFeed'
 import { CardA, MAX_SPRITES } from './CardA'
 import { DriveScene } from './DriveScene'
@@ -39,7 +43,13 @@ const cardA: Omit<SceneDef, 'id'> = {
  * coloque aqui na situação certa. O sorteio passa a considerá-la sozinho.
  */
 export const SCENES: Record<Situation, SceneDef[]> = {
-  solo: [{ id: 'drive-neon', name: 'Carro na cidade neon', Component: DriveScene, duration: () => 9500, sound: sfx.drive }],
+  solo: [
+    { id: 'drive-neon', name: 'Carro na cidade neon', Component: DriveScene, duration: () => 9500, sound: sfx.drive },
+    { id: 'wanted', name: 'Cartaz de procurado', Component: WantedPoster, duration: () => 9000, sound: cue([0.2, sfx.whistle], [3.2, sfx.stamp]) },
+    { id: 'legendary-item', name: 'Item lendário', Component: LegendaryItem, duration: () => 9000, sound: cue([1.6, sfx.coin], [2.3, sfx.fanfare]) },
+    { id: 'axe-return', name: 'O retorno do machado', Component: AxeReturn, duration: () => 9000, sound: cue([0.9, sfx.whoosh], [3.6, sfx.thud], [3.75, sfx.ice]) },
+    { id: 'space-party', name: 'Celebração espacial', Component: SpaceParty, duration: () => 9500, sound: cue([0.1, sfx.land], [2.5, sfx.win], [3.1, sfx.pop], [4.1, sfx.pop], [5.1, sfx.pop]) },
+  ],
   none: [
     { id: 'boat-fog', name: 'Barco na neblina', Component: BoatScene, duration: () => 9000, sound: sfx.sad },
     { id: 'boss-slam', name: 'Chefe da arena (YOU ALL DIED)', Component: BossSlam, duration: () => 10000, sound: cue([3.4, sfx.thud], [5.2, sfx.doom]) },

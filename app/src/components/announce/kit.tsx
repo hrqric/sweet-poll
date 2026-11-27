@@ -63,19 +63,24 @@ export function cast(list: FeedHit[], max = 6): FeedHit[] {
 }
 
 /** Faixa de legenda no pé: categoria, vencedor e um recado. */
-export function Caption({ result, note, tone = 'dark', delay = 1 }: { result: FeedResult; note: ReactNode; tone?: 'dark' | 'light'; delay?: number }) {
+export function Caption({ result, note, tone = 'dark', delay = 1, place = 'bottom' }: {
+  result: FeedResult; note: ReactNode; tone?: 'dark' | 'light'; delay?: number
+  /** `side`: caixinha no canto direito, pra cenas com algo importante no pé da tela */
+  place?: 'bottom' | 'side'
+}) {
   const dark = tone === 'dark'
+  const side = place === 'side'
   return (
     <motion.div
-      className={`absolute inset-x-[3cqw] bottom-[3cqw] border-4 border-black ${dark ? 'bg-[#0c0a12]/90 text-paper' : 'bg-paper/95 text-ink'}`}
+      className={`absolute border-4 border-black ${side ? 'right-[2.5cqw] top-[3cqw] w-[24cqw]' : 'inset-x-[3cqw] bottom-[3cqw]'} ${dark ? 'bg-[#0c0a12]/90 text-paper' : 'bg-paper/95 text-ink'}`}
       style={{ padding: 'max(6px, 1cqw) max(10px, 1.6cqw)' }}
-      initial={{ y: '160%' }}
-      animate={{ y: 0, transition: { delay, duration: 0.35, ease: steps(4) } }}
+      initial={side ? { x: '140%' } : { y: '160%' }}
+      animate={side ? { x: 0, transition: { delay, duration: 0.35, ease: steps(4) } } : { y: 0, transition: { delay, duration: 0.35, ease: steps(4) } }}
     >
-      <p className="truncate font-display leading-tight" style={{ fontSize: 'clamp(12px, 2cqw, 26px)' }}>
+      <p className={`font-display leading-tight ${side ? 'line-clamp-3' : 'truncate'}`} style={{ fontSize: 'clamp(12px, 2cqw, 26px)' }}>
         <span className={dark ? 'text-coin' : 'text-[#8a5a00]'}>{result.category}:</span> {result.winner}
       </p>
-      <p className={`truncate font-display leading-tight ${dark ? 'text-paper-3' : 'text-muted'}`} style={{ fontSize: 'clamp(11px, 1.6cqw, 20px)' }}>
+      <p className={`font-display leading-tight ${side ? 'line-clamp-3' : 'truncate'} ${dark ? 'text-paper-3' : 'text-muted'}`} style={{ fontSize: 'clamp(11px, 1.6cqw, 20px)' }}>
         {note}
       </p>
     </motion.div>
@@ -119,6 +124,38 @@ export function Burst({ x, y, n, delay, colors, spread = 30, up = 18, size = 2, 
             animate={{ opacity: [0, 1, 1, 0], x: [0, dx * 0.6, dx], y: [0, dy, dy + up * 0.4] }}
             transition={{ delay: delay + rnd() * 0.12, duration: dur, ease: steps(6), times: [0, 0.1, 0.6, 1] }}
           />
+        )
+      })}
+    </>
+  )
+}
+
+/** Converte pixel da cena (160×90) pra cqw do player, pra posicionar HTML em cima do SVG. */
+export const cq = (n: number) => `${(n * 100) / W}cqw`
+
+/** Cabeça grande do boneco (retrato), com o canto de cima-esquerda em (x, y). */
+export function Portrait({ avatar, x, y, s }: { avatar: Avatar | null | undefined; x: number; y: number; s: number }) {
+  const rects = bodyRects(avatar).filter((r) => r.y < 13)
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s}) translate(-2 0)`}>
+      {rects.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1} fill={r.fill} />)}
+    </g>
+  )
+}
+
+/** Brilhinhos piscando em volta de um ponto. */
+export function Sparkles({ x, y, n, delay, spread = 20, color = '#fff7c0', seed = 3, dur = 3 }: { x: number; y: number; n: number; delay: number; spread?: number; color?: string; seed?: number; dur?: number }) {
+  const rnd = seeded(seed)
+  return (
+    <>
+      {Array.from({ length: n }, (_, i) => {
+        const sx = x + (rnd() * 2 - 1) * spread
+        const sy = y + (rnd() * 2 - 1) * spread * 0.6
+        return (
+          <motion.g key={i} initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0, 1, 0], y: [0, -4, -8, -12, -16] }} transition={{ delay: delay + rnd() * 1.2, duration: dur, ease: steps(8) }}>
+            <rect x={sx} y={sy - 1} width={1} height={3} fill={color} />
+            <rect x={sx - 1} y={sy} width={3} height={1} fill={color} />
+          </motion.g>
         )
       })}
     </>
