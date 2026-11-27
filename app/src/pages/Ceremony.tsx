@@ -5,6 +5,7 @@ import { demoResult, useResultsFeed, type FeedResult } from '../lib/resultsFeed'
 import { isMuted, setMuted, sfx } from '../lib/sfx'
 import { Head } from '../components/Sprite'
 import { randomAvatar } from '../lib/sprites'
+import { ALL_SCENES, SITUATION_LABEL, type Situation } from '../components/announce/registry'
 import { Loading, TrophyIcon, useToast } from '../components/ui'
 import { WinnerAnnouncement } from '../components/WinnerAnnouncement'
 
@@ -44,6 +45,7 @@ export default function Ceremony() {
   const [ytDraft, setYtDraft] = useState(source.kind === 'youtube' ? source.url : '')
   const [muted, setMutedState] = useState(isMuted())
   const [demo, setDemo] = useState<FeedResult | null>(null)
+  const [testScene, setTestScene] = useState(ALL_SCENES[0].id)
   const stage = useRef<HTMLDivElement>(null)
 
   // polling de 5 s + realtime: anima na hora que o vencedor é marcado
@@ -107,22 +109,36 @@ export default function Ceremony() {
           >
             {muted ? 'Som mudo' : 'Som ligado'}
           </button>
-          {/* uma prévia por cena: 2+ acertos (placa), só você (carro), ninguém (barco) */}
-          <div className="flex items-center gap-1" role="group" aria-label="Testar animação">
-            <span className="mr-1 hidden font-display text-lg text-paper-3 sm:inline">Testar:</span>
-            {([
-              ['Vários', () => {
-                const me = profile ? [{ username: profile.username, avatar: profile.avatar }] : []
-                return [...me, { username: 'amigo_1', avatar: randomAvatar() }, { username: 'amigo_2', avatar: randomAvatar() }]
-              }],
-              ['Só eu', () => (profile ? [{ username: profile.username, avatar: profile.avatar }] : [{ username: 'voce', avatar: randomAvatar() }])],
-              ['Ninguém', () => []],
-            ] as const).map(([label, hits]) => (
-              <button key={label} type="button" className="btn btn-sm btn-paper" onClick={() => setDemo(demoResult(hits()))}>
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* prévia de qualquer cena do catálogo, com a quantidade de acertos que a situação pede */}
+          <form
+            className="flex items-center gap-1"
+            aria-label="Testar animação"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const def = ALL_SCENES.find((d) => d.id === testScene)
+              if (!def) return
+              const me = profile ? { username: profile.username, avatar: profile.avatar } : { username: 'voce', avatar: randomAvatar() }
+              const n = { none: 0, solo: 1, duo: 2, group: 4 }[def.situation]
+              const hits = n === 0 ? [] : [me, ...Array.from({ length: n - 1 }, (_, i) => ({ username: `amigo_${i + 1}`, avatar: randomAvatar() }))]
+              setDemo(demoResult(hits, def.id))
+            }}
+          >
+            <select
+              className="field w-auto py-1.5 text-sm"
+              value={testScene}
+              onChange={(e) => setTestScene(e.target.value)}
+              aria-label="Cena pra testar"
+            >
+              {(Object.keys(SITUATION_LABEL) as Situation[]).map((s) => (
+                <optgroup key={s} label={SITUATION_LABEL[s]}>
+                  {ALL_SCENES.filter((d) => d.situation === s).map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <button type="submit" className="btn btn-sm btn-paper">Testar</button>
+          </form>
           <button type="button" className="btn btn-sm" onClick={fullscreen}>Tela cheia</button>
         </div>
       </header>
@@ -154,7 +170,7 @@ export default function Ceremony() {
                 </p>
               </div>
             )}
-            <WinnerAnnouncement result={current} onDone={done} />
+            <WinnerAnnouncement result={current} history={feed.results} onDone={done} />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">

@@ -12,6 +12,8 @@ export type FeedResult = {
   winner_sub: string
   set_at: string | null
   hits: FeedHit[]
+  /** só em teste: força uma cena específica em vez do sorteio */
+  scene?: string
 }
 export type FeedPool = { id: string; name: string; status: string; members: number }
 
@@ -70,8 +72,9 @@ export function useResultsFeed(code: string, opts: { realtime?: boolean; interva
 }
 
 /** Resultado de mentira pra testar a animação (e posicionar o overlay no OBS). */
-export function demoResult(hits: FeedHit[]): FeedResult {
+export function demoResult(hits: FeedHit[], scene?: string): FeedResult {
   return {
+    scene,
     category_id: `demo-${Date.now()}`,
     category: 'Game of the Year',
     position: 0,

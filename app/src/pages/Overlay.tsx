@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router'
 import { demoResult, useResultsFeed, type FeedResult } from '../lib/resultsFeed'
 import { WinnerAnnouncement } from '../components/WinnerAnnouncement'
 import { DEFAULT_AVATAR, randomAvatar } from '../lib/sprites'
+import { ALL_SCENES } from '../components/announce/registry'
 
 /**
  * Overlay transparente pro OBS (fonte "Navegador", 1920×1080): só a placa de vencedor, sem fundo.
@@ -29,14 +30,14 @@ export default function Overlay() {
 
   useEffect(() => {
     if (!isDemo) return
-    // alterna as três cenas: vários acertos, um só, ninguém
-    const sets = [
-      [{ username: 'player_um', avatar: DEFAULT_AVATAR }, { username: 'player_dois', avatar: randomAvatar() }, { username: 'player_tres', avatar: randomAvatar() }],
-      [{ username: 'player_um', avatar: DEFAULT_AVATAR }],
-      [],
-    ]
+    // passa por todas as cenas do catálogo, cada uma com a quantidade de acertos da sua situação
+    const players = ['player_um', 'player_dois', 'player_tres', 'player_quatro']
     let i = 0
-    const fake = () => setDemo(demoResult(sets[i++ % sets.length]))
+    const fake = () => {
+      const def = ALL_SCENES[i++ % ALL_SCENES.length]
+      const n = { none: 0, solo: 1, duo: 2, group: 4 }[def.situation]
+      setDemo(demoResult(players.slice(0, n).map((u, k) => ({ username: u, avatar: k === 0 ? DEFAULT_AVATAR : randomAvatar() })), def.id))
+    }
     fake()
     const t = setInterval(fake, 12_000)
     return () => clearInterval(t)
@@ -46,7 +47,7 @@ export default function Overlay() {
   const clearDemo = useCallback(() => setDemo(null), [])
   return (
     <div className="fixed inset-0">
-      <WinnerAnnouncement result={demo ?? feed.current} onDone={demo ? clearDemo : next} />
+      <WinnerAnnouncement result={demo ?? feed.current} history={feed.results} onDone={demo ? clearDemo : next} />
     </div>
   )
 }
