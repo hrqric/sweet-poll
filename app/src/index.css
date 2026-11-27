@@ -246,6 +246,38 @@ svg {
   to { transform: translateX(calc(100vw + 120px)); }
 }
 
+/* ───── cenas do Modo cerimônia (SVG 160×90, unidades = pixels da cena) ───── */
+@keyframes sp-scroll {
+  to { transform: translateX(calc(-1px * var(--d))); }
+}
+.sp-loop {
+  animation: sp-scroll var(--t) steps(var(--n)) infinite;
+}
+@keyframes sp-drive {
+  0% { transform: translateX(-90px); }
+  12%, 84% { transform: translateX(0); }
+  97%, 100% { transform: translateX(200px); }
+}
+.sp-drive {
+  animation: sp-drive 9.5s steps(14) forwards;
+}
+@keyframes sp-bounce {
+  50% { transform: translateY(-1px); }
+}
+.sp-bounce {
+  animation: sp-bounce 0.36s steps(1) infinite;
+}
+@keyframes sp-bob {
+  50% { transform: translateY(1px); }
+}
+.sp-bob {
+  animation: sp-bob 2.6s steps(1) infinite;
+}
+.sp-spin-a { animation: blink 0.2s steps(1) infinite; }
+.sp-spin-b { animation: blink 0.2s steps(1) 0.1s infinite; }
+.sp-blink { animation: blink 1.6s steps(1) infinite; }
+.sp-blink-b { animation: blink 1.6s steps(1) 0.8s infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;

@@ -29,11 +29,14 @@ export default function Overlay() {
 
   useEffect(() => {
     if (!isDemo) return
-    const fake = () => setDemo(demoResult([
-      { username: 'player_um', avatar: DEFAULT_AVATAR },
-      { username: 'player_dois', avatar: randomAvatar() },
-      { username: 'player_tres', avatar: randomAvatar() },
-    ]))
+    // alterna as três cenas: vários acertos, um só, ninguém
+    const sets = [
+      [{ username: 'player_um', avatar: DEFAULT_AVATAR }, { username: 'player_dois', avatar: randomAvatar() }, { username: 'player_tres', avatar: randomAvatar() }],
+      [{ username: 'player_um', avatar: DEFAULT_AVATAR }],
+      [],
+    ]
+    let i = 0
+    const fake = () => setDemo(demoResult(sets[i++ % sets.length]))
     fake()
     const t = setInterval(fake, 12_000)
     return () => clearInterval(t)

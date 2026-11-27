@@ -36,4 +36,8 @@ export const sfx = {
   buy: () => tone([784, 988, 1175, 1568], 0.06),
   error: () => tone([220, 165], 0.09, 'square', 0.05),
   win: () => tone([523, 659, 784, 1047, 784, 1047, 1319], 0.08),
+  // motor subindo de giro: vitória solitária
+  drive: () => tone([98, 110, 131, 147, 175, 196, 233, 262, 330, 392, 523, 659], 0.06, 'sawtooth', 0.045),
+  // descendo devagar: ninguém acertou
+  sad: () => tone([392, 370, 349, 330, 311, 262], 0.22, 'triangle', 0.08),
 }

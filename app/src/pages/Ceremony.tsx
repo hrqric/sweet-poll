@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { demoResult, useResultsFeed, type FeedResult } from '../lib/resultsFeed'
 import { isMuted, setMuted, sfx } from '../lib/sfx'
 import { Head } from '../components/Sprite'
+import { randomAvatar } from '../lib/sprites'
 import { Loading, TrophyIcon, useToast } from '../components/ui'
 import { WinnerAnnouncement } from '../components/WinnerAnnouncement'
 
@@ -106,13 +107,22 @@ export default function Ceremony() {
           >
             {muted ? 'Som mudo' : 'Som ligado'}
           </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-paper"
-            onClick={() => setDemo(demoResult(profile ? [{ username: profile.username, avatar: profile.avatar }] : []))}
-          >
-            Testar animação
-          </button>
+          {/* uma prévia por cena: 2+ acertos (placa), só você (carro), ninguém (barco) */}
+          <div className="flex items-center gap-1" role="group" aria-label="Testar animação">
+            <span className="mr-1 hidden font-display text-lg text-paper-3 sm:inline">Testar:</span>
+            {([
+              ['Vários', () => {
+                const me = profile ? [{ username: profile.username, avatar: profile.avatar }] : []
+                return [...me, { username: 'amigo_1', avatar: randomAvatar() }, { username: 'amigo_2', avatar: randomAvatar() }]
+              }],
+              ['Só eu', () => (profile ? [{ username: profile.username, avatar: profile.avatar }] : [{ username: 'voce', avatar: randomAvatar() }])],
+              ['Ninguém', () => []],
+            ] as const).map(([label, hits]) => (
+              <button key={label} type="button" className="btn btn-sm btn-paper" onClick={() => setDemo(demoResult(hits()))}>
+                {label}
+              </button>
+            ))}
+          </div>
           <button type="button" className="btn btn-sm" onClick={fullscreen}>Tela cheia</button>
         </div>
       </header>
