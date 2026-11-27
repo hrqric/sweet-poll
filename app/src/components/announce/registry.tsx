@@ -7,6 +7,9 @@ import { WantedPoster } from './scenes/WantedPoster'
 import { LegendaryItem } from './scenes/LegendaryItem'
 import { AxeReturn } from './scenes/AxeReturn'
 import { SpaceParty } from './scenes/SpaceParty'
+import { Fusion } from './scenes/Fusion'
+import { CartoonKnockout } from './scenes/CartoonKnockout'
+import { DualPortals } from './scenes/DualPortals'
 import type { FeedResult } from '../../lib/resultsFeed'
 import { CardA, MAX_SPRITES } from './CardA'
 import { DriveScene } from './DriveScene'
@@ -56,7 +59,12 @@ export const SCENES: Record<Situation, SceneDef[]> = {
     { id: 'wasted', name: 'Atropelados (WASTED)', Component: Wasted, duration: () => 9000, sound: cue([0.4, sfx.win], [3.0, sfx.crash], [4.1, sfx.doom]) },
     { id: 'bomb-critter', name: 'Bicho-bomba', Component: BombCritter, duration: () => 10000, sound: cue([3.1, sfx.hiss], [4.9, sfx.boom]) },
   ],
-  duo: [{ id: 'card-a-duo', ...cardA }],
+  duo: [
+    { id: 'card-a-duo', ...cardA },
+    { id: 'fusion', name: 'Fusão', Component: Fusion, duration: () => 9500, sound: cue([1.3, sfx.select], [1.8, sfx.select], [2.3, sfx.select], [2.5, sfx.charge], [6.2, sfx.win]) },
+    { id: 'cartoon-ko', name: 'Knockout de desenho antigo', Component: CartoonKnockout, duration: () => 9000, sound: cue([1.2, sfx.shot], [1.6, sfx.shot], [2.0, sfx.shot], [2.4, sfx.shot], [2.8, sfx.shot], [3.3, sfx.boom], [3.7, sfx.fanfare]) },
+    { id: 'dual-portals', name: 'Dupla dimensional', Component: DualPortals, duration: () => 8500, sound: cue([0.9, sfx.portal], [2.3, sfx.portal], [3.0, sfx.clap], [3.3, sfx.win]) },
+  ],
   group: [{ id: 'card-a', ...cardA }],
 }
 

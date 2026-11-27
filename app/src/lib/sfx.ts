@@ -64,6 +64,14 @@ export const sfx = {
   land: () => tone([880, 784, 698, 622, 554, 494, 440, 392], 0.08, 'triangle', 0.05),
   // fogos estourando
   pop: () => tone([1319, 1047, 784, 523], 0.04, 'square', 0.05),
+  // energia carregando (fusão)
+  charge: () => tone([220, 262, 330, 392, 494, 587, 698, 880, 1047, 1319, 1568], 0.07, 'square', 0.05),
+  // tiro de desenho antigo
+  shot: () => tone([1568, 1175], 0.03, 'square', 0.04),
+  // portal abrindo
+  portal: () => tone([330, 440, 587, 784, 587, 440], 0.05, 'sine', 0.06),
+  // palmas (high five)
+  clap: () => tone([2093, 1047], 0.03, 'square', 0.07),
 }
 
 /** Toca uma sequência de sons em tempos marcados (segundos desde o começo da cena). */
