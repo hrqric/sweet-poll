@@ -9,7 +9,12 @@ import { assignScenes, sceneFor } from './announce/registry'
  * Ocupa o pai inteiro (absolute inset-0) e não bloqueia cliques no vídeo embaixo.
  * Tamanhos em cqw: escala junto com o player, do embed pequeno à tela cheia.
  */
-export function WinnerAnnouncement({ result, history = [], onDone }: { result: FeedResult | null; history?: FeedResult[]; onDone: () => void }) {
+/** `corner`: janelinha no canto (não tampa a transmissão); `full`: cobre o player inteiro. */
+export type AnnounceSize = 'corner' | 'full'
+
+export function WinnerAnnouncement({ result, history = [], onDone, size = 'corner' }: {
+  result: FeedResult | null; history?: FeedResult[]; onDone: () => void; size?: AnnounceSize
+}) {
   const assigned = useMemo(() => assignScenes(history), [history])
   const scene = result ? sceneFor(result, assigned) : null
 
@@ -24,14 +29,22 @@ export function WinnerAnnouncement({ result, history = [], onDone }: { result: F
 
   return (
     // a região viva fica no contêiner que já existe: leitor de tela só anuncia mudança em região montada antes
-    <div
-      className="pointer-events-none absolute inset-0 overflow-hidden"
-      style={{ containerType: 'inline-size' }}
-      role="status"
-      aria-live="polite"
-    >
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" role="status" aria-live="polite">
       <AnimatePresence>
-        {result && scene && <scene.Component key={result.category_id + result.set_at} result={result} />}
+        {result && scene && (
+          // a cena desenha em cqw: dentro da janelinha tudo encolhe junto, sem quebrar o layout
+          <div
+            key={result.category_id + result.set_at}
+            className={
+              size === 'full'
+                ? 'absolute inset-0 overflow-hidden'
+                : `absolute bottom-[3%] right-[2%] aspect-video w-[max(36%,240px)] max-w-[96%] overflow-hidden ${scene.transparent ? '' : 'border-4 border-black shadow-[6px_6px_0_rgba(0,0,0,0.55)]'}`
+            }
+            style={{ containerType: 'inline-size' }}
+          >
+            <scene.Component result={result} />
+          </div>
+        )}
       </AnimatePresence>
     </div>
   )

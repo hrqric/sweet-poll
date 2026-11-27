@@ -38,6 +38,8 @@ export type SceneDef = {
   Component: ComponentType<{ result: FeedResult }>
   duration: (r: FeedResult) => number
   sound: () => void
+  /** sem fundo próprio (a placa A): na janelinha do canto vai sem moldura */
+  transparent?: boolean
 }
 
 const cardA: Omit<SceneDef, 'id'> = {
@@ -45,6 +47,7 @@ const cardA: Omit<SceneDef, 'id'> = {
   Component: CardA,
   duration: (r) => 8000 + Math.max(0, Math.min(r.hits.length, MAX_SPRITES) - 3) * 500,
   sound: sfx.win,
+  transparent: true,
 }
 
 /**

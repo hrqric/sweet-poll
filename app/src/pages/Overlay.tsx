@@ -48,7 +48,8 @@ export default function Overlay() {
   const clearDemo = useCallback(() => setDemo(null), [])
   return (
     <div className="fixed inset-0">
-      <WinnerAnnouncement result={demo ?? feed.current} history={feed.results} onDone={demo ? clearDemo : next} />
+      {/* no OBS também vai no canto por padrão; ?tamanho=cheio cobre a tela toda */}
+      <WinnerAnnouncement result={demo ?? feed.current} history={feed.results} onDone={demo ? clearDemo : next} size={params.get('tamanho') === 'cheio' ? 'full' : 'corner'} />
     </div>
   )
 }

@@ -912,7 +912,8 @@ function HostTab({ pool, cats, open, onChange, onFinished }: { pool: Pool; cats:
         <p className="font-display text-3xl leading-none">Telão da cerimônia</p>
         <p className="mt-1 max-w-xl text-muted">
           Vai transmitir o TGA no Discord? Adicione este link no OBS como fonte "Navegador" (1920×1080) por cima da transmissão:
-          a placa do vencedor com quem acertou aparece sozinha. Com <code>?demo=1</code> no fim ela repete um teste pra você posicionar.
+          a animação do vencedor aparece sozinha, numa janelinha no canto pra não tampar a transmissão.
+          Com <code>?demo=1</code> no fim ela repete um teste pra você posicionar; com <code>?tamanho=cheio</code> ela cobre a tela toda.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <code className="px-box-flat min-w-0 flex-1 truncate bg-white px-3 py-2 text-sm">{`${window.location.origin}/b/${pool.invite_code}/overlay`}</code>

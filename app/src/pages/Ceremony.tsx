@@ -7,10 +7,11 @@ import { Head } from '../components/Sprite'
 import { randomAvatar } from '../lib/sprites'
 import { ALL_SCENES, SITUATION_LABEL, type Situation } from '../components/announce/registry'
 import { Loading, TrophyIcon, useToast } from '../components/ui'
-import { WinnerAnnouncement } from '../components/WinnerAnnouncement'
+import { WinnerAnnouncement, type AnnounceSize } from '../components/WinnerAnnouncement'
 
 type Source = { kind: 'twitch' } | { kind: 'youtube'; url: string } | { kind: 'none' }
 const SOURCE_KEY = 'sp-stream-source'
+const SIZE_KEY = 'sp-announce-size'
 
 function loadSource(): Source {
   try {
@@ -42,6 +43,8 @@ export default function Ceremony() {
   const { profile } = useAuth()
   const toast = useToast()
   const [source, setSource] = useState<Source>(loadSource)
+  const [size, setSize] = useState<AnnounceSize>(() => (localStorage.getItem(SIZE_KEY) === 'full' ? 'full' : 'corner'))
+  useEffect(() => { localStorage.setItem(SIZE_KEY, size) }, [size])
   const [ytDraft, setYtDraft] = useState(source.kind === 'youtube' ? source.url : '')
   const [muted, setMutedState] = useState(isMuted())
   const [demo, setDemo] = useState<FeedResult | null>(null)
@@ -170,7 +173,8 @@ export default function Ceremony() {
                 </p>
               </div>
             )}
-            <WinnerAnnouncement result={current} history={feed.results} onDone={done} />
+            {/* sem vídeo não tem o que proteger: a animação ocupa o palco todo */}
+            <WinnerAnnouncement result={current} history={feed.results} onDone={done} size={source.kind === 'none' ? 'full' : size} />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
@@ -210,6 +214,26 @@ export default function Ceremony() {
               </form>
             )}
           </div>
+          {/* tamanho da animação: no canto deixa ver o trailer/anúncio que está passando */}
+          {source.kind !== 'none' && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <span id="size-label" className="font-display text-xl leading-none text-paper-3">Animação</span>
+              <div className="inline-grid grid-cols-2 border-4 border-black" role="radiogroup" aria-labelledby="size-label">
+                {([['corner', 'No canto'], ['full', 'Tela inteira']] as const).map(([k, label], i) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="radio"
+                    aria-checked={size === k}
+                    onClick={() => setSize(k)}
+                    className={`px-3 pt-1.5 pb-2 font-display text-lg leading-none ${size === k ? 'bg-coin text-ink' : 'bg-paper text-ink hover:bg-paper-2'} ${i === 0 ? 'border-r-4 border-black' : ''}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <ul className="mt-4 max-w-[62ch] space-y-1 text-sm text-paper-3">
             <li>Pra tela cheia, use o botão <strong className="font-semibold text-paper">Tela cheia</strong> lá em cima. O do player esconde a animação.</li>
             <li>Vendo na TV? Escolha <strong className="font-semibold text-paper">Sem vídeo</strong> e deixa o celular avisar cada vencedor.</li>
