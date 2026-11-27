@@ -277,6 +277,10 @@ svg {
 .sp-spin-b { animation: blink 0.2s steps(1) 0.1s infinite; }
 .sp-blink { animation: blink 1.6s steps(1) infinite; }
 .sp-blink-b { animation: blink 1.6s steps(1) 0.8s infinite; }
+.sp-gallop-a { animation: blink 0.24s steps(1) infinite; }
+.sp-gallop-b { animation: blink 0.24s steps(1) 0.12s infinite; }
+/* congela a cena: todo loop em CSS para no quadro atual */
+.sp-frozen, .sp-frozen * { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -72,6 +72,16 @@ export const sfx = {
   portal: () => tone([330, 440, 587, 784, 587, 440], 0.05, 'sine', 0.06),
   // palmas (high five)
   clap: () => tone([2093, 1047], 0.03, 'square', 0.07),
+  // dado rolando na mesa
+  dice: () => tone([660, 520, 700, 480, 740, 560, 620, 500, 680], 0.07, 'square', 0.04),
+  // rugido grave
+  roar: () => tone([110, 98, 117, 92, 104, 82, 73], 0.09, 'sawtooth', 0.08),
+  // galope
+  gallop: () => tone([196, 0, 196, 165, 0, 196, 0, 196, 165], 0.09, 'square', 0.04),
+  // fogo acendendo
+  ignite: () => tone([196, 262, 330, 392, 523, 659, 784], 0.12, 'triangle', 0.07),
+  // cursor de seleção
+  cursor: () => tone([1175, 1568], 0.04, 'square', 0.05),
 }
 
 /** Toca uma sequência de sons em tempos marcados (segundos desde o começo da cena). */

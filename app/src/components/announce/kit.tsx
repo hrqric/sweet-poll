@@ -130,6 +130,21 @@ export function Burst({ x, y, n, delay, colors, spread = 30, up = 18, size = 2, 
   )
 }
 
+/**
+ * Camada que rola em loop (CSS, pausável com `.sp-frozen`): o ladrilho de `dist` px se repete até
+ * cobrir a cena e anda `dist` px em `t` segundos, em degraus de 1 px.
+ */
+export function Loop({ dist, t, children }: { dist: number; t: number; children: ReactNode }) {
+  const copies = Math.ceil(W / dist) + 1
+  return (
+    <g className="sp-loop" style={{ '--d': dist, '--t': `${t}s`, '--n': dist } as CSSProperties}>
+      {Array.from({ length: copies }, (_, i) => (
+        <g key={i} transform={`translate(${i * dist} 0)`}>{children}</g>
+      ))}
+    </g>
+  )
+}
+
 /** Converte pixel da cena (160×90) pra cqw do player, pra posicionar HTML em cima do SVG. */
 export const cq = (n: number) => `${(n * 100) / W}cqw`
 

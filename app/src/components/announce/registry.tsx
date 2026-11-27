@@ -10,6 +10,12 @@ import { SpaceParty } from './scenes/SpaceParty'
 import { Fusion } from './scenes/Fusion'
 import { CartoonKnockout } from './scenes/CartoonKnockout'
 import { DualPortals } from './scenes/DualPortals'
+import { Extraction } from './scenes/Extraction'
+import { CriticalSuccess } from './scenes/CriticalSuccess'
+import { QuestComplete } from './scenes/QuestComplete'
+import { SunsetRide } from './scenes/SunsetRide'
+import { BonfireLit } from './scenes/BonfireLit'
+import { SelectPerfect } from './scenes/SelectPerfect'
 import type { FeedResult } from '../../lib/resultsFeed'
 import { CardA, MAX_SPRITES } from './CardA'
 import { DriveScene } from './DriveScene'
@@ -65,7 +71,15 @@ export const SCENES: Record<Situation, SceneDef[]> = {
     { id: 'cartoon-ko', name: 'Knockout de desenho antigo', Component: CartoonKnockout, duration: () => 9000, sound: cue([1.2, sfx.shot], [1.6, sfx.shot], [2.0, sfx.shot], [2.4, sfx.shot], [2.8, sfx.shot], [3.3, sfx.boom], [3.7, sfx.fanfare]) },
     { id: 'dual-portals', name: 'Dupla dimensional', Component: DualPortals, duration: () => 8500, sound: cue([0.9, sfx.portal], [2.3, sfx.portal], [3.0, sfx.clap], [3.3, sfx.win]) },
   ],
-  group: [{ id: 'card-a', ...cardA }],
+  group: [
+    { id: 'card-a', ...cardA },
+    { id: 'extraction', name: 'Extração bem-sucedida', Component: Extraction, duration: () => 9500, sound: cue([1.2, sfx.thud], [2.1, sfx.shot], [2.5, sfx.shot], [2.9, sfx.shot], [3.8, sfx.land], [5.4, sfx.confirm], [6.8, sfx.fanfare]) },
+    { id: 'critical-success', name: 'Acerto crítico (D20)', Component: CriticalSuccess, duration: () => 9000, sound: cue([0.8, sfx.dice], [3.0, sfx.fanfare], [3.8, sfx.clap]) },
+    { id: 'quest-complete', name: 'Caçada concluída', Component: QuestComplete, duration: () => 9000, sound: cue([1.2, sfx.roar], [3.0, sfx.boom], [4.4, sfx.fanfare]) },
+    { id: 'sunset-ride', name: 'Cavalgada ao pôr do sol', Component: SunsetRide, duration: () => 9500, sound: cue([0.2, sfx.gallop], [1.2, sfx.gallop], [2.2, sfx.gallop], [3.2, sfx.gallop], [4.4, sfx.whistle], [5.5, sfx.doom]) },
+    { id: 'bonfire', name: 'A fogueira (BONFIRE LIT)', Component: BonfireLit, duration: () => 9000, sound: cue([3.6, sfx.ignite]) },
+    { id: 'select-perfect', name: 'Seleção de personagens (PERFECT!)', Component: SelectPerfect, duration: () => 9000, sound: cue([0.6, sfx.cursor], [0.9, sfx.cursor], [1.2, sfx.cursor], [1.5, sfx.cursor], [3.5, sfx.win]) },
+  ],
 }
 
 export const ALL_SCENES: (SceneDef & { situation: Situation })[] = (Object.keys(SCENES) as Situation[]).flatMap((s) =>
